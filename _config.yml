@@ -27,12 +27,12 @@ author:
   bio              : "Professor & Integrated Member in Smart Cities Research Center (Ci2)"
   location         : "Tomar, Portugal"
   employer         : "Instituto Politécnico de Tomar"
-  uri              : "https://www.ipt.pt"
+  uri              : # "https://www.ipt.pt"
   email            : "fmbarros@ipt.pt" 
 
   # Academic websites
   arxiv            : # URL - Update with the correct link to your profile
-  googlescholar    : "https://scholar.google.pt/citations?hl=pt-PT&pli=1&user=tg-iL4UAAAAJ"
+  googlescholar    : # "https://scholar.google.pt/citations?hl=pt-PT&pli=1&user=tg-iL4UAAAAJ" myBarros
   impactstory      : # URL
   orcid            : "http://orcid.org/0000-0002-5891-1371"
   semantic         : # URL
@@ -70,7 +70,7 @@ author:
   weibo            : # Username
   wikipedia        : # Username
   xing             : # Username
-  youtube          : "https://www.youtube.com/user/manuelbarros64"
+  youtube          : # "https://www.youtube.com/user/manuelbarros64"
   zhihu            : # URL
 
 
