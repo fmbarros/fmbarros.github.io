@@ -8,11 +8,11 @@
 
 # Basic Site Settings
 locale                   : "en-US"
-title                    : "Manuel F.M. Barros"
+title                    : "Manuel Barros homepage"
 title_separator          : "-"
-name                     : &name "Your Name"
+name                     : &name "Manuel Barros"
 description              : &description "personal description"
-url                      : https://fmbarros.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+url                      : https://academicpages.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "academicpages/academicpages.github.io"
 
