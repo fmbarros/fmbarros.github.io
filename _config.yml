@@ -8,7 +8,7 @@
 
 # Basic Site Settings
 locale                   : "en-US"
-title                    : "Prof. Barros homepage"
+title                    : "M.Barros homepage"
 title_separator          : "-"
 name                     : &name "Manuel Barros"
 description              : &description "personal description"
@@ -24,7 +24,7 @@ author:
   avatar           : "manuel-barros-profile.jpg"
   name             : "Manuel Barros"
   pronouns         : # example: "she/her"  
-  bio              : "Short biography for the left-hand sidebar"
+  bio              : "Professor & Integrated Member in Smart Cities Research Center (Ci2)"
   location         : "Tomar, Portugal"
   employer         : "Instituto Politécnico de Tomar"
   uri              : "https://www.ipt.pt"
