@@ -1,0 +1,2625 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCampus IES v2.0 - Configuração & Monitorização</title>
+    <!-- Tailwind CSS para Design Responsivo e Moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para Visualização de Dados de Consumo -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome para Icons Académicos e Operacionais -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        slate: {
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Toast de Notificação Personalizado (Elimina o uso de alerts do browser) -->
+    <div id="toast-notification"
+        class="fixed top-5 right-5 z-50 transform translate-y-[-150%] transition-all duration-300 max-w-sm w-full bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center space-x-3 border border-slate-700">
+        <div class="bg-emerald-500 text-white p-2 rounded-xl" id="toast-icon">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="flex-1">
+            <p class="text-xs font-bold" id="toast-title">Notificação</p>
+            <p class="text-[11px] text-slate-300" id="toast-desc">Mensagem de sucesso!</p>
+        </div>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white text-xs"><i
+                class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <!-- Branding Dinâmico -->
+                <div class="flex items-center space-x-3">
+                    <div id="inst-logo-container"
+                        class="bg-emerald-600 text-white p-3 rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center">
+                        <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                    </div>
+                    <div>
+                        <span id="inst-name-display"
+                            class="text-xl font-extrabold tracking-tight text-slate-900">INSTITUIÇÃO MODELO</span>
+                        <p class="text-xs text-emerald-600 font-bold uppercase tracking-wider">SmartCampus IES v2.0</p>
+                    </div>
+                </div>
+
+                <!-- Menu Público e Admin Alternável -->
+                <nav class="hidden lg:flex space-x-1" id="desktop-nav">
+                    <button onclick="switchTab('dashboard')" id="btn-dashboard"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-emerald-700 bg-emerald-50 border-b-2 border-emerald-600">
+                        <i class="fa-solid fa-chart-column mr-1.5"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('nlp')" id="btn-nlp"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-brain mr-1.5"></i> SDG Toolkit
+                    </button>
+                    <button onclick="switchTab('gamification')" id="btn-gamification"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-trophy mr-1.5"></i> Liga Gamificada
+                    </button>
+                    <button onclick="switchTab('faults')" id="btn-faults"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-950 transition-all">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Deteção de Avarias
+                    </button>
+                    <button onclick="switchTab('carpooling')" id="btn-carpooling"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-950">
+                        <i class="fa-solid fa-car-side mr-1.5"></i> Boleias
+                    </button>
+                    <button onclick="handleAdminTabClick()" id="btn-admin"
+                        class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-950 hover:bg-slate-100 transition-all border border-dashed border-slate-300">
+                        <i class="fa-solid fa-gears mr-1.5 text-blue-600"></i> Painel de Gestão
+                    </button>
+                </nav>
+
+                <!-- Live Monitor Pulsante -->
+                <div class="flex items-center space-x-2">
+                    <span
+                        class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                        <span class="w-2.5 h-2.5 mr-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                        Live Monitor
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <div class="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex justify-around shadow-xs">
+        <button onclick="switchTab('dashboard')"
+            class="mobile-tab-btn flex flex-col items-center text-xs font-bold text-emerald-600" id="m-btn-dashboard">
+            <i class="fa-solid fa-chart-column text-lg mb-1"></i> Dashboard
+        </button>
+        <button onclick="switchTab('nlp')"
+            class="mobile-tab-btn flex flex-col items-center text-xs font-bold text-slate-500" id="m-btn-nlp">
+            <i class="fa-solid fa-brain text-lg mb-1"></i> SDG
+        </button>
+        <button onclick="switchTab('gamification')"
+            class="mobile-tab-btn flex flex-col items-center text-xs font-bold text-slate-500" id="m-btn-gamification">
+            <i class="fa-solid fa-trophy text-lg mb-1"></i> Liga
+        </button>
+        <button onclick="switchTab('faults')"
+            class="mobile-tab-btn flex flex-col items-center text-xs font-bold text-slate-500" id="m-btn-faults">
+            <i class="fa-solid fa-triangle-exclamation text-lg mb-1"></i> Avarias
+        </button>
+        <button onclick="switchTab('carpooling')"
+            class="mobile-tab-btn flex flex-col items-center text-xs font-bold text-slate-500" id="m-btn-carpooling">
+            <i class="fa-solid fa-car-side text-lg mb-1"></i> Boleias
+        </button>
+        <button onclick="handleAdminTabClick()"
+            class="mobile-tab-btn flex flex-col items-center text-xs font-bold text-slate-500" id="m-btn-admin">
+            <i class="fa-solid fa-gears text-lg mb-1"></i> Admin
+        </button>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Password Modal para Acesso Administrativo -->
+        <div id="password-modal"
+            class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
+                <div class="text-center space-y-2">
+                    <div
+                        class="bg-blue-50 text-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto text-xl">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-950">Autenticação Requerida</h3>
+                    <p class="text-xs text-slate-500">Introduza a palavra-passe de gestor para aceder às configurações
+                        estruturais.</p>
+                </div>
+                <div class="space-y-3">
+                    <input type="password" id="admin-password-input"
+                        onkeydown="if(event.key === 'Enter') submitAdminPassword()"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-mono"
+                        placeholder="Palavra-passe">
+                    <p id="password-error" class="text-xs text-red-600 font-bold text-center hidden">Palavra-passe
+                        incorreta!</p>
+                    <div class="flex gap-2">
+                        <button onclick="closePasswordModal()"
+                            class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition-all">Cancelar</button>
+                        <button onclick="submitAdminPassword()"
+                            class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all">Entrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Eco-Nudging Banner -->
+        <div id="nudging-banner"
+            class="mb-8 p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition-all duration-300">
+            <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+            <div class="flex items-center space-x-4 z-10">
+                <div class="bg-white/20 p-3.5 rounded-2xl shrink-0 backdrop-blur-xs">
+                    <i class="fa-solid fa-satellite-dish text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg tracking-tight">Conselho Eco-Nudge Ativo</h4>
+                    <p class="text-emerald-50 text-xs md:text-sm mt-0.5" id="nudge-text">Atividades letivas nas salas
+                        terminam mais cedo hoje. Lembra-te de apagar o projetor para poupar energia.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 z-10">
+                <button onclick="generateNewNudge()"
+                    class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all border border-white/10 whitespace-nowrap">
+                    <i class="fa-solid fa-rotate mr-1.5"></i> Seguinte
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 1: DASHBOARD & ML FORECAST ==================== -->
+        <div id="tab-dashboard" class="tab-content space-y-8">
+            <!-- Selector de Recursos -->
+            <div
+                class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-900">Análise de Consumos do Campus</h2>
+                    <p class="text-xs text-slate-500">Selecione o recurso para ajustar todos os cálculos e previsões.
+                    </p>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+                    <button onclick="selectResource('electricity')" id="res-electricity"
+                        class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all bg-white shadow-xs text-slate-900">
+                        <i class="fa-solid fa-bolt mr-1 text-yellow-500"></i> Eletricidade
+                    </button>
+                    <button onclick="selectResource('water')" id="res-water"
+                        class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-950">
+                        <i class="fa-solid fa-droplet mr-1 text-blue-500"></i> Água
+                    </button>
+                    <button onclick="selectResource('gas')" id="res-gas"
+                        class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-950">
+                        <i class="fa-solid fa-fire mr-1 text-orange-500"></i> Gás
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- KPI 1 -->
+                <div class="glass-card p-6 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Consumo Atual
+                            (Mês)</span>
+                        <h3 class="text-2xl font-black text-slate-950 mt-1" id="kpi-consumo">24,800 kWh</h3>
+                        <p class="text-xs text-emerald-600 font-bold mt-1.5"><i
+                                class="fa-solid fa-arrow-down mr-0.5"></i> 6.2% vs homólogo</p>
+                    </div>
+                    <div class="bg-emerald-50 text-emerald-700 p-4 rounded-2xl" id="kpi-icon-container">
+                        <i class="fa-solid fa-bolt text-2xl"></i>
+                    </div>
+                </div>
+                <!-- KPI 2 -->
+                <div class="glass-card p-6 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Poupança
+                            Acumulada</span>
+                        <h3 class="text-2xl font-black text-slate-950 mt-1" id="kpi-poupanca">€ 3,420.00</h3>
+                        <p class="text-xs text-emerald-600 font-bold mt-1.5" id="kpi-ambient-impact"><i
+                                class="fa-solid fa-leaf mr-0.5"></i> 8.4 T CO₂ evitadas</p>
+                    </div>
+                    <div class="bg-teal-50 text-teal-700 p-4 rounded-2xl">
+                        <i class="fa-solid fa-hand-holding-dollar text-2xl"></i>
+                    </div>
+                </div>
+                <!-- KPI 3 -->
+                <div class="glass-card p-6 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Participação
+                            Ativa</span>
+                        <h3 class="text-2xl font-black text-slate-950 mt-1" id="kpi-participation">0 Alunos</h3>
+                        <p class="text-xs text-amber-600 font-bold mt-1.5"><i class="fa-solid fa-fire mr-0.5"></i> No
+                            top do ranking</p>
+                    </div>
+                    <div class="bg-amber-50 text-amber-700 p-4 rounded-2xl">
+                        <i class="fa-solid fa-users text-2xl"></i>
+                    </div>
+                </div>
+                <!-- KPI 4 -->
+                <div class="glass-card p-6 rounded-2xl shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Syllabus
+                            Integrados</span>
+                        <h3 class="text-2xl font-black text-slate-950 mt-1" id="kpi-nlp-count">48 Cadeiras</h3>
+                        <p class="text-xs text-blue-600 font-bold mt-1.5"><i class="fa-solid fa-check mr-0.5"></i>
+                            Alinhados com ODS</p>
+                    </div>
+                    <div class="bg-blue-50 text-blue-700 p-4 rounded-2xl">
+                        <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previsão e Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 glass-card p-6 rounded-2xl shadow-xs space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h3 class="text-lg font-extrabold text-slate-900">Previsão e Dados de Consumo (Últimos 3
+                                Anos)</h3>
+                            <p class="text-xs text-slate-500">Histórico de leituras reais e modelagem preditiva baseada
+                                em sazonalidade</p>
+                        </div>
+                        <span
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">
+                            <i class="fa-solid fa-robot mr-1.5"></i> Motor ML Client-Side
+                        </span>
+                    </div>
+                    <div class="h-80 w-full">
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Simulação de Eficiência -->
+                <div class="glass-card p-6 rounded-2xl shadow-xs flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-extrabold text-slate-900 mb-2">Simulador de Decisão</h3>
+                        <p class="text-xs text-slate-500 mb-6">Ative ações estruturais para simular a redução de
+                            consumos em tempo real nos próximos 12 meses.</p>
+
+                        <div class="space-y-4">
+                            <!-- Medida Solar -->
+                            <div
+                                class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-all">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-yellow-50 text-yellow-700 p-2.5 rounded-xl">
+                                        <i class="fa-solid fa-solar-panel"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-900" id="lbl-medida-solar">Autoconsumo
+                                            Solar (12%)</h4>
+                                        <p class="text-[10px] text-slate-400">Instalação de painéis solares</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="medida-solar" onchange="updateForecast()"
+                                        class="sr-only peer">
+                                    <div
+                                        class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Medida HVAC -->
+                            <div
+                                class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-all">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-blue-50 text-blue-700 p-2.5 rounded-xl">
+                                        <i class="fa-solid fa-temperature-arrow-down"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-900" id="lbl-medida-hvac">Sensores & IoT
+                                            (8%)</h4>
+                                        <p class="text-[10px] text-slate-400">Controlo inteligente de HVAC</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="medida-hvac" onchange="updateForecast()"
+                                        class="sr-only peer">
+                                    <div
+                                        class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Medida Nudging -->
+                            <div
+                                class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-all">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-purple-50 text-purple-700 p-2.5 rounded-xl">
+                                        <i class="fa-solid fa-message"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-900" id="lbl-medida-nudge">
+                                            Comportamental (5%)</h4>
+                                        <p class="text-[10px] text-slate-400">Campanhas de Nudging Ativo</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="medida-nudges" onchange="updateForecast()"
+                                        class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600">
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Impact Card -->
+                    <div class="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+                        <span class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider">Redução Futura
+                            Estimada</span>
+                        <div class="text-3xl font-black text-emerald-700 mt-1" id="poupanca-estimada">-5%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: SDG CURRICULUM NLP TOOLKIT ==================== -->
+        <div id="tab-nlp" class="tab-content hidden space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Syllabus Input -->
+                <div class="lg:col-span-2 glass-card p-6 rounded-2xl shadow-sm space-y-6">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-brain text-emerald-600"></i> SDG Curriculum NLP Toolkit
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Validação do alinhamento dos planos de estudos com os ODS. Submeta os dados para associar os
+                            avanços à sua Escola.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Escola
+                                Responsável</label>
+                            <select id="nlp-school"
+                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <!-- Opções Dinâmicas -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Carregar Plano Curricular</label>
+                            <div class="flex gap-2">
+                                <button onclick="loadTemplateSyllabus()"
+                                    class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-center"
+                                    title="Carregar plano de exemplo pré-definido">
+                                    <i class="fa-solid fa-file-lines text-slate-500"></i> Plano Exemplo
+                                </button>
+                                <label for="syllabus-file-input"
+                                    class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+                                    title="Carregar ficheiro de plano curricular (.txt, .md, .csv, .json, etc.)">
+                                    <i class="fa-solid fa-cloud-arrow-up text-slate-500"></i> Ficheiro
+                                </label>
+                                <input type="file" id="syllabus-file-input" class="hidden" accept=".txt,.md,.json,.csv,.doc,.docx" onchange="loadSyllabusFromFile(event)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Texto do Syllabus / Ementa
+                            Curricular</label>
+                        <textarea id="syllabus-text" rows="8"
+                            class="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-xs focus:outline-none"
+                            placeholder="Copie e cole o plano programático da disciplina para analisar as suas referências..."></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <button onclick="analyzeCurriculum()"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl transition-all shadow-md shadow-emerald-100 text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar e Enviar Privadamente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Output & Private Vault Simulation -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm flex flex-col justify-between">
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div>
+                                <h4 class="text-sm font-extrabold text-slate-900">Vault de Submissões</h4>
+                                <span class="text-[10px] text-slate-400">Total Integradas: <b id="vault-syllabus-count" class="text-indigo-600 font-bold">48 Cadeiras</b></span>
+                            </div>
+                            <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md"><i
+                                    class="fa-solid fa-lock mr-1"></i> Ficheiro Privado</span>
+                        </div>
+
+                        <div id="nlp-results-placeholder" class="text-center py-12 text-slate-400">
+                            <i class="fa-solid fa-shield-halved text-4xl mb-3"></i>
+                            <p class="text-xs">Insira o syllabus e selecione a escola para executar a indexação
+                                semântica.</p>
+                        </div>
+
+                        <!-- Results Card -->
+                        <div id="nlp-results-content" class="hidden space-y-4">
+                            <div
+                                class="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs flex justify-between items-center">
+                                <span class="font-bold">Alinhamento Global:</span>
+                                <span class="font-extrabold text-sm" id="score-val">Forte (85/100)</span>
+                            </div>
+
+                            <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ODS
+                                Impactados</h5>
+                            <div class="space-y-2 max-h-56 overflow-y-auto pr-1" id="ods-badge-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- Simulated Google Sheet Log -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[10px] text-slate-500">
+                        <i class="fa-solid fa-database mr-1"></i> Registado dinamicamente em: <code
+                            class="font-mono bg-white px-1 py-0.5 rounded">GoogleSheets_Syllabus!A1</code> para
+                        relatórios de acreditação.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: GAMIFICAÇÃO & LEADERBOARD ==================== -->
+        <div id="tab-gamification" class="tab-content hidden space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Leaderboards e Histórico -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Leaderboard Escolas -->
+                    <div class="glass-card p-6 rounded-2xl shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-extrabold text-slate-900">Liga Eco-Académica de Escolas</h3>
+                                <p class="text-xs text-slate-500">Poupança acumulada por Escola/Departamento.</p>
+                            </div>
+                            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full"><i
+                                    class="fa-solid fa-trophy mr-1"></i> Época de Transição</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="border-b border-slate-100 text-slate-400 text-[10px] uppercase font-bold">
+                                        <th class="py-3 px-4">Posição</th>
+                                        <th class="py-3 px-4">Escola / Divisão</th>
+                                        <th class="py-3 px-4 text-center">Poupança (%)</th>
+                                        <th class="py-3 px-4 text-right">Pontos</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-xs" id="leaderboard-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard Alunos (Top 10) -->
+                    <div class="glass-card p-6 rounded-2xl shadow-sm space-y-4">
+                        <div>
+                            <h3 class="text-lg font-extrabold text-slate-900">Top 10 Ativistas</h3>
+                            <p class="text-xs text-slate-500">Desempenho individual dos alunos que mais ações
+                                sustentáveis reportaram este mês.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="border-b border-slate-100 text-slate-400 text-[10px] uppercase font-bold">
+                                        <th class="py-3 px-4">Lugar</th>
+                                        <th class="py-3 px-4">Nome</th>
+                                        <th class="py-3 px-4">Nº Aluno</th>
+                                        <th class="py-3 px-4 text-right">Total Pontos</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-xs" id="student-leaderboard-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logger de Ações Verdes -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-lg font-extrabold text-slate-900 mb-2">Reportar Ação Ecológica</h4>
+                        <p class="text-xs text-slate-500 mb-6">Registe uma atividade eco-consciente realizada hoje para
+                            acumular pontos para si e para a sua Escola.</p>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">A Minha
+                                    Escola</label>
+                                <select id="gamify-school"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"></select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nome</label>
+                                    <input type="text" id="gamify-student-name"
+                                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none"
+                                        placeholder="Ex: Rui">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nº
+                                        Aluno</label>
+                                    <input type="number" id="gamify-student-id"
+                                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none"
+                                        placeholder="Ex: 24501">
+                                </div>
+                            </div>
+
+                            <label class="block text-xs font-bold text-slate-500 uppercase mt-4">Lista de Ações
+                                Disponíveis</label>
+                            <div class="space-y-2 max-h-64 overflow-y-auto pr-1" id="gamify-actions-list">
+                                <!-- Dynamic action buttons populated from elasticity matrix -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-slate-50 rounded-xl text-center border border-slate-100">
+                        <p class="text-[10px] text-slate-400">Verifique a matriz de pontuação ou os regulamentos no
+                            Painel de Administração.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: DETEÇÃO DE AVARIAS ==================== -->
+        <div id="tab-faults" class="tab-content hidden space-y-8">
+            <div class="glass-card p-6 rounded-2xl shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Sistema de Monitorização e
+                            Deteção de Anomalias
+                        </h3>
+                        <p class="text-xs text-slate-500">Motor de regras inteligente que cruza picos fora de horas e
+                            anomalias de consumos.</p>
+                    </div>
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 animate-pulse">
+                        <i class="fa-solid fa-shield mr-1"></i> Scan Ativo
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="p-5 rounded-2xl border border-red-100 bg-red-50/50 flex items-start space-x-3">
+                        <i class="fa-solid fa-fire text-red-600 text-2xl mt-1"></i>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Crítico</h4>
+                            <p class="text-2xl font-black text-red-700 mt-1" id="crit-count">1 Alerta</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Sistemas HVAC indevidos ou consumos urgentes.</p>
+                        </div>
+                    </div>
+                    <div class="p-5 rounded-2xl border border-amber-100 bg-amber-50/50 flex items-start space-x-3">
+                        <i class="fa-solid fa-circle-exclamation text-amber-600 text-2xl mt-1"></i>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Advertências</h4>
+                            <p class="text-2xl font-black text-amber-700 mt-1" id="warn-count">2 Avisos</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Padrões invulgares registados no fim-de-semana.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="p-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 flex items-start space-x-3">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-2xl mt-1"></i>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Normais</h4>
+                            <p class="text-2xl font-black text-emerald-700 mt-1" id="normal-count">24 Sistemas</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Sensores operando de acordo com as regras.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Histórico de Incidentes em
+                        Tempo Real</h4>
+                    <div class="space-y-3 shadow-xs rounded-2xl" id="faults-container">
+                        <!-- Dynamic Fault logs generated here -->
+                    </div>
+                </div>
+
+                <!-- Formulário de Reporte de Avaria (Nova Funcionalidade) -->
+                <div class="border-t border-slate-200 pt-8 mt-6">
+                    <h4 class="text-sm font-extrabold text-slate-950 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane text-emerald-600"></i> Reportar Nova Avaria / Incidente à
+                        Manutenção
+                    </h4>
+                    <form id="report-fault-form" onsubmit="submitNewFault(event)"
+                        class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Edifício / Sala /
+                                Localização</label>
+                            <input type="text" id="fault-location" required
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none"
+                                placeholder="Ex: ESTT Bloco C, Sala 102">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tipo de
+                                Incidente</label>
+                            <select id="fault-type" required
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none">
+                                <option value="ILUMINAÇÃO">Iluminação Ineficiente / Danificada</option>
+                                <option value="CLIMATIZAÇÃO/HVAC">Ar Condicionado ou Aquecimento Fora de Horas</option>
+                                <option value="CANALIZAÇÃO/ÁGUA">Rutura ou Fuga de Água</option>
+                                <option value="INFR_SISTEMAS">Equipamento de TI / PC ligado sem Utilização</option>
+                                <option value="RESÍDUOS/LIMPEZA">Ecopontos ou Resíduos Mal Encaminhados</option>
+                                <option value="OUTROS">Outra Ineficiência Energética / Infraestrutura</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Urgência /
+                                Gravidade</label>
+                            <select id="fault-urgency" required
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none">
+                                <option value="Advertência">Advertência (Moderado / Desperdício)</option>
+                                <option value="Crítico">Problema Crítico (Rutura Grave / Perigo)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Descrição dos
+                                Detalhes</label>
+                            <textarea id="fault-desc" rows="3" required
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none"
+                                placeholder="Forneça detalhes adicionais para a equipa técnica (ex: Projetor ligado com sala vazia desde as 14h...)"></textarea>
+                        </div>
+                        <div class="md:col-span-3 flex justify-end">
+                            <button type="submit"
+                                class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl text-xs transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Submeter à Manutenção
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 5: BOLEIAS SUSTENTÁVEIS ==================== -->
+        <div id="tab-carpooling" class="tab-content hidden space-y-8">
+            <div
+                class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-10 opacity-10"><i class="fa-solid fa-car-side text-[11rem]"></i>
+                </div>
+                <div class="relative z-10 max-w-3xl">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-car-side text-2xl"></i>
+                        <h2 class="text-xl font-extrabold">Boleias Sustentáveis no Campus</h2>
+                    </div>
+                    <p class="text-emerald-50 text-xs mt-2">Partilha viagens entre a comunidade académica, reduz
+                        emissões e acumula pontos para a tua escola.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card p-4 rounded-2xl"><span
+                        class="text-[10px] font-bold text-slate-400 uppercase">Boleias disponíveis</span><strong
+                        id="carpool-kpi-available" class="block text-2xl font-black text-emerald-600 mt-1">0</strong>
+                </div>
+                <div class="glass-card p-4 rounded-2xl"><span
+                        class="text-[10px] font-bold text-slate-400 uppercase">Lugares partilhados</span><strong
+                        id="carpool-kpi-seats" class="block text-2xl font-black text-blue-600 mt-1">0</strong></div>
+                <div class="glass-card p-4 rounded-2xl"><span class="text-[10px] font-bold text-slate-400 uppercase">CO₂
+                        evitado</span><strong id="carpool-kpi-co2"
+                        class="block text-2xl font-black text-teal-600 mt-1">0 kg</strong></div>
+                <div class="glass-card p-4 rounded-2xl"><span
+                        class="text-[10px] font-bold text-slate-400 uppercase">Participações</span><strong
+                        id="carpool-kpi-participants" class="block text-2xl font-black text-amber-600 mt-1">0</strong>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 glass-card p-6 rounded-3xl shadow-sm space-y-4">
+                    <div
+                        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-extrabold text-slate-900 flex items-center gap-2"><i
+                                    class="fa-solid fa-magnifying-glass text-emerald-600"></i> Procurar boleias</h3>
+                            <p class="text-xs text-slate-500 mt-1">Escolhe uma viagem disponível para reservar um lugar
+                                ou demonstrar interesse.</p>
+                        </div>
+                        <button onclick="clearCarpoolFilters()"
+                            class="text-xs font-bold text-slate-500 hover:text-emerald-700"><i
+                                class="fa-solid fa-rotate-left mr-1"></i> Limpar</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input id="carpool-filter-origin" oninput="renderCarpools()"
+                            class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="Origem">
+                        <input id="carpool-filter-destination" oninput="renderCarpools()"
+                            class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="Destino">
+                        <input id="carpool-filter-date" oninput="renderCarpools()" type="date"
+                            class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    </div>
+                    <div id="carpool-list" class="space-y-3"></div>
+                    <p id="carpool-empty" class="hidden text-center py-8 text-xs text-slate-400">Não existem boleias que
+                        correspondam à pesquisa.</p>
+                </div>
+
+                <div class="lg:col-span-2 glass-card p-6 rounded-3xl shadow-sm">
+                    <h3 class="font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3"><i
+                            class="fa-solid fa-plus text-emerald-600"></i> Publicar uma viagem</h3>
+                    <form onsubmit="publishCarpool(event)" class="space-y-3 mt-4 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="carpool-driver-name" required
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="O teu nome">
+                            <input id="carpool-driver-id" required
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Nº estudante">
+                        </div>
+                        <select id="carpool-school" required
+                            class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"></select>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="carpool-origin" required
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Origem">
+                            <input id="carpool-destination" required
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Destino">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="carpool-date" required type="date"
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                            <input id="carpool-time" required type="time"
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="carpool-seats" required type="number" min="1" max="8"
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                                placeholder="Lugares livres">
+                            <input id="carpool-distance" required type="number" min="1"
+                                class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                                placeholder="Distância (km)">
+                        </div>
+                        <p class="text-[10px] text-slate-400"><i class="fa-solid fa-leaf text-emerald-500 mr-1"></i> A
+                            estimativa usa 0,12 kg CO₂ por passageiro/km.</p>
+                        <button
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all"><i
+                                class="fa-solid fa-paper-plane mr-1.5"></i> Publicar boleia</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 6: ADMIN / CONFIGURAÇÃO (RESTRICTED) ==================== -->
+        <div id="tab-admin" class="tab-content hidden space-y-8">
+            <div class="glass-card p-6 rounded-2xl shadow-sm border-2 border-dashed border-blue-200">
+                <div
+                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-6">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-gears text-blue-600"></i> Painel Administrativo de Replicação
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Configure, molde e replique esta plataforma para
+                            qualquer IES editando os parâmetros estruturais abaixo.</p>
+                    </div>
+                    <div class="flex items-center space-x-2 w-full sm:w-auto">
+                        <button onclick="logoutAdmin()"
+                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-right-from-bracket"></i> Sair do Painel
+                        </button>
+                        <button onclick="exportConfiguration()"
+                            class="bg-slate-950 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-file-export"></i> Exportar Configuração (JSON)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Config Forms -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Setup do Campus e Branding -->
+                    <div class="space-y-6">
+                        <h4 class="text-sm font-extrabold text-slate-900 border-l-4 border-blue-600 pl-2">1. Identidade
+                            e Escolas</h4>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nome da
+                                    Instituição</label>
+                                <input type="text" id="config-inst-name"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value="INSTITUIÇÃO MODELO" onchange="applyAdminChanges()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Ícone ou Imagem
+                                    Logótipo (Classe CSS ou URL)</label>
+                                <input type="text" id="config-inst-logo"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value="fa-solid fa-graduation-cap" onchange="applyAdminChanges()">
+                                <p class="text-[10px] text-slate-400 mt-1">Suporta classes do FontAwesome (ex:
+                                    <code>fa-solid fa-seedling</code>) ou links diretos para logótipos de imagem (ex:
+                                    <code>https://dominio.com/logo.png</code>).</p>
+                            </div>
+
+                            <!-- Gestão de Escolas -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Escolas do Campus
+                                    (Ativas / Desativadas)</label>
+                                <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                    id="admin-schools-list">
+                                    <!-- Dynamic checklist for schools -->
+                                </div>
+                                <div class="flex gap-2 mt-2">
+                                    <input type="text" id="new-school-code"
+                                        class="w-1/4 p-2.5 bg-white border border-slate-200 rounded-lg text-xs placeholder-slate-400"
+                                        placeholder="Cod (ex: ESTT)">
+                                    <input type="text" id="new-school-name"
+                                        class="w-3/4 p-2.5 bg-white border border-slate-200 rounded-lg text-xs placeholder-slate-400"
+                                        placeholder="Nome Completo">
+                                    <button onclick="addNewSchool()"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded-lg text-xs">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Palavra-passe de Administração -->
+                        <h4 class="text-sm font-extrabold text-slate-900 border-l-4 border-blue-600 pl-2 pt-4">2.
+                            Segurança de Acesso</h4>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nova
+                                    Palavra-passe</label>
+                                <div class="flex gap-2">
+                                    <input type="password" id="new-admin-password"
+                                        class="w-3/4 p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                                        placeholder="Nova palavra-passe">
+                                    <button onclick="changeAdminPassword()"
+                                        class="w-1/4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs">Alterar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Módulos Visíveis/Invisíveis -->
+                        <h4 class="text-sm font-extrabold text-slate-900 border-l-4 border-blue-600 pl-2 pt-4">3. Ativar
+                            / Desativar Módulos</h4>
+                        <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700">Módulo SDG Curriculum Toolkit</span>
+                                <input type="checkbox" id="mod-nlp-toggle" onchange="applyAdminChanges()"
+                                    class="w-4 h-4 text-blue-600" checked>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700">Módulo Liga de Gamificação</span>
+                                <input type="checkbox" id="mod-gamification-toggle" onchange="applyAdminChanges()"
+                                    class="w-4 h-4 text-blue-600" checked>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700">Módulo de Monitorização de Avarias</span>
+                                <input type="checkbox" id="mod-faults-toggle" onchange="applyAdminChanges()"
+                                    class="w-4 h-4 text-blue-600" checked>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fatores, Elasticidades e Ficheiros -->
+                    <div class="space-y-6">
+                        <h4 class="text-sm font-extrabold text-slate-900 border-l-4 border-blue-600 pl-2">4. Fatores de
+                            Conversão, Coeficientes e Custos</h4>
+
+                        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Custo Eletricidade
+                                    (€/kWh)</label>
+                                <input type="number" step="0.01" id="cfg-cost-elec"
+                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs"
+                                    onchange="applyAdminChanges()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Fator Emissão Rede
+                                    (kg/kWh)</label>
+                                <input type="number" step="0.01" id="cfg-ef-grid"
+                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs"
+                                    onchange="applyAdminChanges()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Custo Água
+                                    (€/m³)</label>
+                                <input type="number" step="0.01" id="cfg-cost-water"
+                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs"
+                                    onchange="applyAdminChanges()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Custo Gás
+                                    (€/m³)</label>
+                                <input type="number" step="0.01" id="cfg-cost-gas"
+                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs"
+                                    onchange="applyAdminChanges()">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Syllabus Integrados Base (Cadeiras ODS)</label>
+                                <input type="number" min="0" step="1" id="cfg-syllabus-count"
+                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs"
+                                    onchange="applyAdminChanges()">
+                            </div>
+                        </div>
+
+                        <!-- Parametrização Coeficientes S_m e Impactos -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h5 class="text-xs font-bold text-slate-700">Coeficientes S_m & Coeficientes de Impacto
+                                </h5>
+                                <select id="admin-res-select" onchange="loadResParamsToAdmin()"
+                                    class="p-1 bg-white border border-slate-200 rounded text-xs">
+                                    <option value="electricity">Eletricidade</option>
+                                    <option value="water">Água</option>
+                                    <option value="gas">Gás</option>
+                                </select>
+                            </div>
+
+                            <!-- Coeficientes S_m editáveis (12 meses) -->
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Índices
+                                    Sazonais (S_m) do Recurso Ativo</label>
+                                <div class="grid grid-cols-4 gap-2 text-center" id="sm-inputs-container">
+                                    <!-- Dynamic Inputs for Sm -->
+                                </div>
+                            </div>
+
+                            <!-- Coeficientes de Impacto Empírico editáveis -->
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase">Impacto Solar
+                                        (ex: 0.12)</label>
+                                    <input type="number" step="0.01" id="cfg-impact-solar"
+                                        class="w-full p-2 bg-white border border-slate-200 rounded text-xs"
+                                        onchange="saveResParamsFromAdmin()">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase">Impacto HVAC (ex:
+                                        0.08)</label>
+                                    <input type="number" step="0.01" id="cfg-impact-hvac"
+                                        class="w-full p-2 bg-white border border-slate-200 rounded text-xs"
+                                        onchange="saveResParamsFromAdmin()">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 uppercase">Impacto Nudge
+                                        (ex: 0.05)</label>
+                                    <input type="number" step="0.01" id="cfg-impact-nudge"
+                                        class="w-full p-2 bg-white border border-slate-200 rounded text-xs"
+                                        onchange="saveResParamsFromAdmin()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edição de Mensagens Eco-Nudges (Nova Funcionalidade) -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+                            <h5 class="text-xs font-bold text-slate-700">5. Gestão de Notificações Eco-Nudges</h5>
+                            <div class="space-y-3">
+                                <div class="max-h-36 overflow-y-auto space-y-2 pr-1" id="admin-nudges-list">
+                                    <!-- Dynamic list of editable nudges -->
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-nudge-input"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs placeholder-slate-400"
+                                        placeholder="Escreva uma nova mensagem consciente...">
+                                    <button onclick="addNewNudgeAdmin()"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded-lg text-xs">Adicionar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Carregar dados do utilizador CSV / Google Sheets -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+                            <h5 class="text-xs font-bold text-slate-700">6. Carregar Dados de Consumo (Últimos 3 Anos)
+                            </h5>
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Ficheiro CSV Local
+                                    ou Google Sheets CSV Link</label>
+                                <input type="text" id="sheets-csv-url"
+                                    class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                    placeholder="Cole o link .csv do Google Sheets público">
+                                <div class="flex gap-2">
+                                    <button onclick="loadFromCsvUrl()"
+                                        class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded-lg text-xs">Carregar
+                                        URL</button>
+                                    <input type="file" id="csv-file-input" class="hidden"
+                                        onchange="loadFromCsvFile(event)" accept=".csv">
+                                    <button onclick="document.getElementById('csv-file-input').click()"
+                                        class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-1.5 rounded-lg text-xs">Carregar
+                                        Ficheiro CSV</button>
+                                </div>
+                                <p class="text-[9px] text-slate-400 mt-1">Formato do CSV esperado:
+                                    <code>Ano,Mes,Recurso,Consumo</code> (Exemplo:
+                                    <code>2025,1,electricity,28100</code>). O motor ajusta e recalcula a tendência
+                                    linear e os dados do dashboard.</p>
+                            </div>
+                        </div>
+
+                        <!-- Importador / Cola de Ficheiro JSON de Config -->
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-900 border-l-4 border-blue-600 pl-2 mb-2">7.
+                                Importar / Colar Configuração Dinâmica</h4>
+                            <textarea id="import-json-area" rows="4"
+                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-mono focus:outline-none"
+                                placeholder='Cole aqui a chave de configuração JSON de outra instituição de ensino superior...'></textarea>
+                            <button onclick="importConfiguration()"
+                                class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-file-import"></i> Aplicar Chave e Atualizar Plataforma
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+    </main>
+
+    <!-- ==================== ECOBOT AI BOTÃO FLUTUANTE & JANELA POP-UP ==================== -->
+    <!-- Botão Flutuante (FAB) -->
+    <button onclick="toggleChat()" id="chat-toggle-btn"
+        class="fixed bottom-6 right-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 transform hover:scale-110 active:scale-95 focus:outline-none">
+        <i class="fa-solid fa-robot text-xl" id="chat-icon-indicator"></i>
+        <!-- Ping indicativo de estado online -->
+        <span class="absolute top-0 right-0 flex h-3.5 w-3.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
+        </span>
+    </button>
+
+    <!-- Janela de Chat (Pop-up) -->
+    <div id="chat-popup-window"
+        class="fixed bottom-24 right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 h-[480px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col transform translate-y-4 opacity-0 pointer-events-none transition-all duration-300 hidden">
+        <!-- Header do Chat -->
+        <div class="bg-slate-900 text-white p-4 rounded-t-3xl flex justify-between items-center shadow-sm">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-emerald-600/20 text-emerald-400 p-1.5 rounded-lg">
+                    <i class="fa-solid fa-robot text-sm"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-black tracking-wider uppercase block">EcoBot - Assistente</span>
+                    <span class="text-[10px] text-slate-400 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Online
+                    </span>
+                </div>
+            </div>
+            <button onclick="toggleChat()"
+                class="text-slate-400 hover:text-white transition-colors focus:outline-none p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Mensagens do Chat -->
+        <div id="chat-messages-container" class="flex-grow p-4 overflow-y-auto space-y-3 text-xs bg-slate-50">
+            <!-- Primeira Mensagem Boas Vindas -->
+            <div class="flex items-start space-x-2">
+                <div class="bg-emerald-100 text-emerald-800 p-2 rounded-xl">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="bg-white border border-slate-100 p-3 rounded-2xl max-w-[80%] text-slate-800 shadow-sm">
+                    <p class="font-bold mb-1">EcoBot AI:</p>
+                    <p>Olá! Sou o assistente de sustentabilidade do campus. Podes perguntar-me sobre o programa
+                        EcoEscolas, sobre a aplicação SmartCampus ou como podes contribuir no teu departamento. Como te
+                        posso ajudar hoje?</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sugestões de Perguntas Rápidas -->
+        <div
+            class="px-4 py-2 border-t border-slate-100 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none bg-white">
+            <button onclick="sendQuickQuestion('Como funciona a liga de gamificação?')"
+                class="bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-[10px] font-bold py-1 px-2.5 rounded-lg transition-all shadow-sm">Como
+                funciona a liga?</button>
+            <button onclick="sendQuickQuestion('O que é o programa EcoEscolas?')"
+                class="bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-[10px] font-bold py-1 px-2.5 rounded-lg transition-all shadow-sm">O
+                que é o EcoEscolas?</button>
+            <button onclick="sendQuickQuestion('How can I save water in the campus?')"
+                class="bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-[10px] font-bold py-1 px-2.5 rounded-lg transition-all shadow-sm">How
+                to save water? 🇬🇧</button>
+        </div>
+
+        <!-- Input de Chat -->
+        <div class="p-3 border-t border-slate-100 flex gap-2 bg-white rounded-b-3xl">
+            <input type="text" id="chat-user-input" onkeydown="if(event.key === 'Enter') sendChatMessage()"
+                class="flex-grow p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500 transition-colors"
+                placeholder="Escreve aqui a tua pergunta...">
+            <button onclick="sendChatMessage()"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-3 rounded-xl text-xs transition-all flex items-center justify-center shadow-sm">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer com Créditos de Autor Completos (CC-BY-SA & GitHub) -->
+    <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 py-10 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <!-- Branding e Copyright -->
+                <div class="text-center md:text-left space-y-1">
+                    <span class="text-white font-extrabold text-sm tracking-tight">SmartCampus<span
+                            class="text-emerald-500">IES</span> v2.0</span>
+                    <p class="text-[11px] text-slate-500">Plataforma Inteligente e Replicável para Gestão Energética
+                        Ativa do Campus.</p>
+                </div>
+
+                <!-- Atribuição de Créditos e Autor (Nova Funcionalidade) -->
+                <div class="text-center md:text-right space-y-1 text-xs">
+                    <p class="text-white font-bold">Autor: Manuel Barros</p>
+                    <p class="text-slate-500 text-[11px]">Contacto: <a href="mailto:manuel.barros@ipt.pt"
+                            class="text-emerald-400 hover:underline">manuel.barros@ipt.pt</a> | IPT (Instituto
+                        Politécnico de Tomar)</p>
+                    <p class="text-slate-500 text-[11px]">Iniciativa integrada na Rede Campus Sustentável, Portugal.</p>
+                    <span id="footer-inst-name" class="hidden"></span>
+                </div>
+            </div>
+
+            <hr class="border-slate-800">
+
+            <!-- Licenciamento e Open Source -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
+                <p>Licença de Software: <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank"
+                        class="text-slate-400 hover:underline">Creative Commons CC-BY-SA 4.0</a> (Atribuição
+                    Compartilha-Igual).</p>
+                <div class="flex items-center space-x-3">
+                    <a href="https://github.com" target="_blank"
+                        class="hover:text-white transition-all flex items-center gap-1"><i
+                            class="fa-brands fa-github"></i> GitHub Repositório</a>
+                    <span class="text-slate-700">|</span>
+                    <span>Versão Core 2.0.1</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        // CONFIGURAÇÃO DEFAULT (ESTADO CENTRALIZADO DA APLICAÇÃO)
+        let appState = {
+            instName: "INSTITUIÇÃO MODELO SUSTENTÁVEL",
+            instLogo: "fa-solid fa-graduation-cap",
+            activeResource: "electricity", // electricity, water, gas
+            adminPassword: "admin123",      // Palavra-passe por defeito
+            syllabusCount: 48,              // Número de Syllabus/Cadeiras integradas com ODS
+            costs: {
+                electricity: 0.22,
+                water: 1.85,
+                gas: 0.75
+            },
+            emissions: {
+                electricity: 0.24, // kg CO2 / kWh
+                water: 0.12,      // kg CO2 / m3
+                gas: 1.88         // kg CO2 / m3
+            },
+            schools: [
+                { code: "ESTT", name: "Escola Superior de Tecnologia de Tomar", active: true, points: 2850, savings: 12.4 },
+                { code: "ESGT", name: "Escola Superior de Gestão de Tomar", active: true, points: 1980, savings: 9.8 },
+                { code: "ESTA", name: "Escola Superior de Tecnologia de Abrantes", active: true, points: 1450, savings: 7.1 }
+            ],
+            modules: {
+                nlp: true,
+                gamification: true,
+                faults: true,
+                carpooling: true
+            },
+            carpools: [
+                {
+                    id: 1,
+                    driverName: "Ana Martins",
+                    driverId: "24589",
+                    school: "ESGT",
+                    origin: "Abrantes",
+                    destination: "Tomar",
+                    date: "2026-09-15",
+                    time: "08:00",
+                    seats: 3,
+                    passengers: [],
+                    status: "disponível",
+                    distanceKm: 42,
+                    co2PerPassenger: 5.04
+                },
+                {
+                    id: 2,
+                    driverName: "Rui Silva",
+                    driverId: "24501",
+                    school: "ESTT",
+                    origin: "Tomar",
+                    destination: "Abrantes",
+                    date: "2026-09-16",
+                    time: "17:30",
+                    seats: 2,
+                    passengers: [],
+                    status: "disponível",
+                    distanceKm: 42,
+                    co2PerPassenger: 5.04
+                }
+            ],
+            // Matriz de Elasticidade das Ações Verdes
+            actions: [
+                { id: "lights", icon: "fa-lightbulb", color: "text-amber-500", label: "Desligou luzes/projetores vazios", points: 50 },
+                { id: "stairs", icon: "fa-stairs", color: "text-blue-500", label: "Uso preferencial de escadas", points: 30 },
+                { id: "waste", icon: "fa-recycle", color: "text-green-500", label: "Triagem correta de resíduos", points: 40 }
+            ],
+            // Classificações Locais (Gamificação)
+            studentLeaderboard: [
+                { name: "Rui Silva", id: "24501", points: 350 },
+                { name: "Sara Martins", id: "24589", points: 280 },
+                { name: "José Costa", id: "24610", points: 240 }
+            ],
+            // Mensagens conscientes personalizáveis (Eco-Nudges)
+            nudges: [
+                "As temperaturas estão muito agradáveis hoje. Desligar o ar condicionado pode poupar até 8 kWh.",
+                "Luzes de presença ligadas à luz do dia. Pode desligar as luzes junto às janelas de forma segura.",
+                "Sabias que se 10% dos estudantes subirem de escadas em vez de elevador, pouparemos imensa energia?"
+            ],
+            // Parâmetros de Recursos e ML editáveis do utilizador
+            resourceParams: {
+                electricity: {
+                    unit: "kWh",
+                    labels: ['Jan 23', 'Mai 23', 'Set 23', 'Jan 24', 'Mai 24', 'Set 24', 'Jan 25', 'Mai 25', 'Set 25', 'Jan 26 (P)', 'Mai 26 (P)', 'Set 26 (P)'],
+                    history: [29500, 27000, 25500, 28800, 26100, 24800, 28100, 25300, 23900],
+                    forecast: [27500, 24600, 23100],
+                    baseKpi: 24800,
+                    impactCoeffs: { solar: 0.12, hvac: 0.08, nudge: 0.05 },
+                    sm: [1.15, 1.10, 0.95, 0.90, 0.95, 1.05, 1.12, 0.55, 0.90, 1.00, 1.10, 1.18] // 12 meses
+                },
+                water: {
+                    unit: "m³",
+                    labels: ['Jan 23', 'Mai 23', 'Set 23', 'Jan 24', 'Mai 24', 'Set 24', 'Jan 25', 'Mai 25', 'Set 25', 'Jan 26 (P)', 'Mai 26 (P)', 'Set 26 (P)'],
+                    history: [410, 390, 310, 395, 380, 295, 385, 360, 280],
+                    forecast: [375, 340, 270],
+                    baseKpi: 360,
+                    impactCoeffs: { solar: 0.0, hvac: 0.05, nudge: 0.15 },
+                    sm: [1.10, 1.05, 0.98, 0.95, 1.00, 1.05, 1.15, 0.40, 0.92, 1.00, 1.15, 1.25]
+                },
+                gas: {
+                    unit: "m³",
+                    labels: ['Jan 23', 'Mai 23', 'Set 23', 'Jan 24', 'Mai 24', 'Set 24', 'Jan 25', 'Mai 25', 'Set 25', 'Jan 26 (P)', 'Mai 26 (P)', 'Set 26 (P)'],
+                    history: [1100, 600, 450, 1050, 580, 420, 1020, 550, 400],
+                    forecast: [990, 520, 380],
+                    baseKpi: 550,
+                    impactCoeffs: { solar: 0.0, hvac: 0.15, nudge: 0.05 },
+                    sm: [1.35, 1.20, 0.85, 0.70, 0.60, 0.50, 0.45, 0.20, 0.80, 1.05, 1.55, 1.75]
+                }
+            }
+        };
+
+        // Registo de avarias local e dinâmico
+        let faultLogs = [
+            { sys: "Climatização ESTT Bloco A", type: "Crítico", desc: "HVAC ligado indevidamente ao Sábado (Consumo detetado de 45 kWh fora de horas).", time: "Há 2 horas", color: "border-red-500 bg-red-50/20" },
+            { sys: "Rede de Rega Relvados Tomar", type: "Advertência", desc: "Fluxo de água anómalo de 12 m³ detetado entre as 3h e as 5h da manhã.", time: "Há 1 dia", color: "border-amber-500 bg-amber-50/20" },
+            { sys: "Laboratório Sistemas ESTA", type: "Advertência", desc: "Carga residual alta de PCs em standby em período de encerramento temporário.", time: "Há 2 dias", color: "border-amber-500 bg-amber-50/20" }
+        ];
+
+        let energyChartInstance = null;
+        let isAuthenticated = false;
+
+        // Histórico diário anti-spam para impedir cliques sucessivos (focado por estudante + ação ecológica)
+        let rateLimitRegistry = {};
+
+        // Iniciar App e Carregar LocalStorage se disponível
+        window.onload = function () {
+            if (localStorage.getItem('smartcampus_config')) {
+                try {
+                    const loadedState = JSON.parse(localStorage.getItem('smartcampus_config'));
+                    // Migrar estado dinamicamente para manter compatibilidade
+                    appState = { ...appState, ...loadedState };
+                    if (typeof appState.syllabusCount !== 'number') {
+                        appState.syllabusCount = 48;
+                    }
+                } catch (e) {
+                    console.error("Erro a ler config local, usando padrões.");
+                }
+            }
+            applyConfigToUI();
+            initChart();
+            renderSchoolsDropdowns();
+            renderGamificationList();
+            renderLeaderboard();
+            renderStudentLeaderboard();
+            renderFaults();
+            renderCarpoolSchoolOptions();
+            renderCarpools();
+            updateForecast();
+            loadResParamsToAdmin();
+            renderNudgesAdmin();
+            generateNewNudge();
+        };
+
+        // Toast de Notificação Personalizado
+        function showToast(title, desc, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            const toastTitle = document.getElementById('toast-title');
+            const toastDesc = document.getElementById('toast-desc');
+            const toastIcon = document.getElementById('toast-icon');
+
+            if (toastTitle) toastTitle.innerText = title;
+            if (toastDesc) toastDesc.innerText = desc;
+
+            if (toastIcon) {
+                if (isError) {
+                    toastIcon.className = "bg-red-500 text-white p-2 rounded-xl";
+                    toastIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+                } else {
+                    toastIcon.className = "bg-emerald-500 text-white p-2 rounded-xl";
+                    toastIcon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+                }
+            }
+
+            if (toast) {
+                toast.classList.remove('translate-y-[-150%]');
+                setTimeout(() => {
+                    hideToast();
+                }, 4500);
+            }
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('toast-notification');
+            if (toast) toast.classList.add('translate-y-[-150%]');
+        }
+
+        // Tab Switcher com Destaque Dinâmico no menu Ativo
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+            // Repor botões desktop
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-700', 'bg-emerald-50', 'border-b-2', 'border-emerald-600');
+                btn.classList.add('text-slate-600', 'hover:text-slate-950');
+            });
+            // Repor botões mobile
+            document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-600');
+                btn.classList.add('text-slate-500');
+            });
+
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
+            // Marcar botão ativo Desktop
+            const deskBtn = document.getElementById(`btn-${tabId}`);
+            if (deskBtn) {
+                deskBtn.classList.remove('text-slate-600', 'hover:text-slate-950');
+                deskBtn.classList.add('text-emerald-700', 'bg-emerald-50', 'border-b-2', 'border-emerald-600');
+            }
+
+            // Marcar botão ativo Mobile
+            const mobBtn = document.getElementById(`m-btn-${tabId}`);
+            if (mobBtn) {
+                mobBtn.classList.remove('text-slate-500');
+                mobBtn.classList.add('text-emerald-600');
+            }
+        }
+
+        // Lógica de tab de Gestão com Autenticação de Password
+        function handleAdminTabClick() {
+            if (isAuthenticated) {
+                switchTab('admin');
+            } else {
+                openPasswordModal();
+            }
+        }
+
+        function openPasswordModal() {
+            const modal = document.getElementById('password-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                const passwordInput = document.getElementById('admin-password-input');
+                if (passwordInput) passwordInput.focus();
+            }
+        }
+
+        function closePasswordModal() {
+            const modal = document.getElementById('password-modal');
+            if (modal) modal.classList.add('hidden');
+            const errorMsg = document.getElementById('password-error');
+            if (errorMsg) errorMsg.classList.add('hidden');
+            const passwordInput = document.getElementById('admin-password-input');
+            if (passwordInput) passwordInput.value = '';
+        }
+
+        function submitAdminPassword() {
+            const passwordInput = document.getElementById('admin-password-input');
+            const inputVal = passwordInput ? passwordInput.value : '';
+            if (inputVal === appState.adminPassword) {
+                isAuthenticated = true;
+                closePasswordModal();
+                switchTab('admin');
+                showToast("Acesso Autorizado", "Modo administrativo do campus ativo com sucesso.");
+            } else {
+                const errorMsg = document.getElementById('password-error');
+                if (errorMsg) errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function changeAdminPassword() {
+            const input = document.getElementById('new-admin-password');
+            const newVal = input ? input.value.trim() : '';
+            if (newVal.length >= 4) {
+                appState.adminPassword = newVal;
+                saveConfig();
+                showToast("Sucesso", "Palavra-passe administrativa alterada.");
+                if (input) input.value = '';
+            } else {
+                showToast("Erro", "A palavra-passe deve conter pelo menos 4 caracteres!", true);
+            }
+        }
+
+        function logoutAdmin() {
+            isAuthenticated = false;
+            showToast("Sessão Terminada", "Sair do Modo de Gestão Ativa efetuado.");
+            switchTab('dashboard');
+        }
+
+        // Toggle Admin Restricted View
+        function toggleAdminView() {
+            if (isAuthenticated) {
+                logoutAdmin();
+            } else {
+                openPasswordModal();
+            }
+        }
+
+        // Aplicar Configurações Estruturais à Interface (com salvaguardas robustas contra elementos nulos)
+        function applyConfigToUI() {
+            const instNameDisplay = document.getElementById('inst-name-display');
+            if (instNameDisplay) instNameDisplay.innerText = appState.instName;
+
+            const footerInstName = document.getElementById('footer-inst-name');
+            if (footerInstName) footerInstName.innerText = appState.instName;
+
+            // Renderização do Logótipo (FontAwesome vs Imagem URL)
+            const logoContainer = document.getElementById('inst-logo-container');
+            if (logoContainer) {
+                if (appState.instLogo.startsWith('http://') || appState.instLogo.startsWith('https://') || appState.instLogo.startsWith('data:image')) {
+                    logoContainer.innerHTML = `<img src="${appState.instLogo}" class="w-8 h-8 object-contain rounded-lg" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'white\'><path d=\'M12 2L1 9l11 7 9-5.73V17h2V9L12 2z\'/></svg>'">`;
+                } else {
+                    logoContainer.innerHTML = `<i class="${appState.instLogo} text-2xl"></i>`;
+                }
+            }
+
+            // Setup administrativo do painel
+            const configInstName = document.getElementById('config-inst-name');
+            if (configInstName) configInstName.value = appState.instName;
+
+            const configInstLogo = document.getElementById('config-inst-logo');
+            if (configInstLogo) configInstLogo.value = appState.instLogo;
+
+            const cfgCostElec = document.getElementById('cfg-cost-elec');
+            if (cfgCostElec) cfgCostElec.value = appState.costs.electricity;
+
+            const cfgEfGrid = document.getElementById('cfg-ef-grid');
+            if (cfgEfGrid) cfgEfGrid.value = appState.emissions.electricity;
+
+            const cfgCostWater = document.getElementById('cfg-cost-water');
+            if (cfgCostWater) cfgCostWater.value = appState.costs.water;
+
+            const cfgCostGas = document.getElementById('cfg-cost-gas');
+            if (cfgCostGas) cfgCostGas.value = appState.costs.gas;
+
+            const cfgSyllabusCount = document.getElementById('cfg-syllabus-count');
+            if (cfgSyllabusCount) cfgSyllabusCount.value = appState.syllabusCount || 48;
+
+            updateSyllabusCountUI();
+
+            // Módulos Visíveis/Ocultáveis
+            const toggleTabVisibility = (tabId, isVisible) => {
+                const btn = document.getElementById(`btn-${tabId}`);
+                const mbtn = document.getElementById(`m-btn-${tabId}`);
+                if (btn) isVisible ? btn.classList.remove('hidden') : btn.classList.add('hidden');
+                if (mbtn) isVisible ? mbtn.classList.remove('hidden') : mbtn.classList.add('hidden');
+            };
+
+            toggleTabVisibility('nlp', appState.modules.nlp);
+            toggleTabVisibility('gamification', appState.modules.gamification);
+            toggleTabVisibility('faults', appState.modules.faults);
+
+            const modNlpToggle = document.getElementById('mod-nlp-toggle');
+            if (modNlpToggle) modNlpToggle.checked = appState.modules.nlp;
+
+            const modGamificationToggle = document.getElementById('mod-gamification-toggle');
+            if (modGamificationToggle) modGamificationToggle.checked = appState.modules.gamification;
+
+            const modFaultsToggle = document.getElementById('mod-faults-toggle');
+            if (modFaultsToggle) modFaultsToggle.checked = appState.modules.faults;
+
+            // Renderização de Escolas para administração
+            const schoolsContainer = document.getElementById('admin-schools-list');
+            if (schoolsContainer) {
+                schoolsContainer.innerHTML = '';
+                appState.schools.forEach((sc, index) => {
+                    schoolsContainer.innerHTML += `
+                        <div class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-100">
+                            <span class="text-xs font-bold text-slate-800">[${sc.code}] ${sc.name}</span>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" onchange="toggleSchool(${index})" ${sc.active ? 'checked' : ''} class="w-4 h-4 text-emerald-600">
+                                <button onclick="removeSchool(${index})" class="text-red-500 hover:text-red-700 text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Alterar o Recurso Ativo (Dashboard)
+        function selectResource(res) {
+            appState.activeResource = res;
+            document.querySelectorAll('[id^="res-"]').forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-xs', 'text-slate-900');
+                btn.classList.add('text-slate-600', 'hover:text-slate-900');
+            });
+            const activeResBtn = document.getElementById(`res-${res}`);
+            if (activeResBtn) activeResBtn.classList.add('bg-white', 'shadow-xs', 'text-slate-900');
+
+            // Adaptar ícones de KPI
+            const kpiIcon = document.getElementById('kpi-icon-container');
+            if (kpiIcon) {
+                if (res === 'electricity') kpiIcon.innerHTML = `<i class="fa-solid fa-bolt text-2xl"></i>`;
+                if (res === 'water') kpiIcon.innerHTML = `<i class="fa-solid fa-droplet text-2xl"></i>`;
+                if (res === 'gas') kpiIcon.innerHTML = `<i class="fa-solid fa-fire text-2xl"></i>`;
+            }
+
+            // Atualizar Rótulos do Painel Simulador
+            const resConf = appState.resourceParams[res];
+            const lblSolar = document.getElementById('lbl-medida-solar');
+            if (lblSolar) lblSolar.innerText = `Autoconsumo Solar (${Math.round(resConf.impactCoeffs.solar * 100)}%)`;
+
+            const lblHvac = document.getElementById('lbl-medida-hvac');
+            if (lblHvac) lblHvac.innerText = `Sensores & IoT (${Math.round(resConf.impactCoeffs.hvac * 100)}%)`;
+
+            const lblNudge = document.getElementById('lbl-medida-nudge');
+            if (lblNudge) lblNudge.innerText = `Comportamental (${Math.round(resConf.impactCoeffs.nudge * 100)}%)`;
+
+            // Recarregar os inputs dinâmicos na aba administrativa
+            const adminResSelect = document.getElementById('admin-res-select');
+            if (adminResSelect) adminResSelect.value = res;
+
+            loadResParamsToAdmin();
+            initChart();
+            updateForecast();
+        }
+
+        // Carregar Configurações de Recursos na Interface Administrativa
+        function loadResParamsToAdmin() {
+            const adminResSelect = document.getElementById('admin-res-select');
+            const res = adminResSelect ? adminResSelect.value : appState.activeResource;
+            const resConf = appState.resourceParams[res];
+
+            // Renderizar Inputs dos 12 Coeficientes Sazonais (S_m)
+            const container = document.getElementById('sm-inputs-container');
+            if (container) {
+                container.innerHTML = '';
+                const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+                for (let i = 0; i < 12; i++) {
+                    container.innerHTML += `
+                        <div>
+                            <span class="text-[9px] font-bold text-slate-400">${months[i]}</span>
+                            <input type="number" step="0.01" id="sm-input-${i}" class="w-full p-1 bg-white border border-slate-200 rounded text-center text-xs" value="${resConf.sm[i] || 1.00}" onchange="saveResParamsFromAdmin()">
+                        </div>
+                    `;
+                }
+            }
+
+            // Carregar Coeficientes de Impacto
+            const impactSolarInput = document.getElementById('cfg-impact-solar');
+            if (impactSolarInput) impactSolarInput.value = resConf.impactCoeffs.solar;
+
+            const impactHvacInput = document.getElementById('cfg-impact-hvac');
+            if (impactHvacInput) impactHvacInput.value = resConf.impactCoeffs.hvac;
+
+            const impactNudgeInput = document.getElementById('cfg-impact-nudge');
+            if (impactNudgeInput) impactNudgeInput.value = resConf.impactCoeffs.nudge;
+        }
+
+        // Guardar Parâmetros de Recursos da Interface Administrativa
+        function saveResParamsFromAdmin() {
+            const adminResSelect = document.getElementById('admin-res-select');
+            const res = adminResSelect ? adminResSelect.value : appState.activeResource;
+            const resConf = appState.resourceParams[res];
+
+            // Ler S_m do ecrã
+            for (let i = 0; i < 12; i++) {
+                const inputEl = document.getElementById(`sm-input-${i}`);
+                if (inputEl) {
+                    const val = parseFloat(inputEl.value);
+                    resConf.sm[i] = isNaN(val) ? 1.0 : val;
+                }
+            }
+
+            // Ler Impactos
+            const solarEl = document.getElementById('cfg-impact-solar');
+            if (solarEl) resConf.impactCoeffs.solar = parseFloat(solarEl.value) || 0.0;
+
+            const hvacEl = document.getElementById('cfg-impact-hvac');
+            if (hvacEl) resConf.impactCoeffs.hvac = parseFloat(hvacEl.value) || 0.0;
+
+            const nudgeEl = document.getElementById('cfg-impact-nudge');
+            if (nudgeEl) resConf.impactCoeffs.nudge = parseFloat(nudgeEl.value) || 0.0;
+
+            saveConfig();
+            updateForecast();
+        }
+
+        // Inicializar e Atualizar Gráfico (ChartJS)
+        function initChart() {
+            const canvasEl = document.getElementById('energyChart');
+            if (!canvasEl) return;
+
+            const ctx = canvasEl.getContext('2d');
+            const activeRes = appState.activeResource;
+            const resConf = appState.resourceParams[activeRes];
+
+            // Dividir as séries históricas (9 pontos) e preditivas (3 pontos)
+            const histData = Array(9).fill(null);
+            for (let i = 0; i < 9; i++) histData[i] = resConf.history[i];
+
+            const foreData = Array(12).fill(null);
+            foreData[8] = resConf.history[8]; // Conexão visual
+            for (let i = 0; i < 3; i++) foreData[9 + i] = resConf.forecast[i];
+
+            if (energyChartInstance) {
+                energyChartInstance.destroy();
+            }
+
+            energyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: resConf.labels,
+                    datasets: [
+                        {
+                            label: `Consumo Histórico (${resConf.unit})`,
+                            data: histData,
+                            borderColor: '#0f172a',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.25,
+                            pointBackgroundColor: '#0f172a'
+                        },
+                        {
+                            label: `Previsão ML (${resConf.unit})`,
+                            data: foreData,
+                            borderColor: '#10b981',
+                            borderWidth: 3,
+                            borderDash: [5, 5],
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            tension: 0.25,
+                            pointBackgroundColor: '#10b981'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(226, 232, 240, 0.5)' },
+                            ticks: {
+                                callback: function (value) {
+                                    return value.toLocaleString('pt-PT');
+                                }
+                            }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Lógica de ML Simulado & Ajuste de Parâmetros
+        function updateForecast() {
+            const activeRes = appState.activeResource;
+            const resConf = appState.resourceParams[activeRes];
+
+            let reductionFactor = 1.0;
+            let displayReduction = 0;
+
+            const checkSolar = document.getElementById('medida-solar');
+            const checkHvac = document.getElementById('medida-hvac');
+            const checkNudge = document.getElementById('medida-nudges');
+
+            if (checkSolar && checkSolar.checked) {
+                reductionFactor -= resConf.impactCoeffs.solar;
+                displayReduction += (resConf.impactCoeffs.solar * 100);
+            }
+            if (checkHvac && checkHvac.checked) {
+                reductionFactor -= resConf.impactCoeffs.hvac;
+                displayReduction += (resConf.impactCoeffs.hvac * 100);
+            }
+            if (checkNudge && checkNudge.checked) {
+                reductionFactor -= resConf.impactCoeffs.nudge;
+                displayReduction += (resConf.impactCoeffs.nudge * 100);
+            }
+
+            const savingDisplay = document.getElementById('poupanca-estimada');
+            if (savingDisplay) savingDisplay.innerText = `-${displayReduction.toFixed(0)}%`;
+
+            // Aplicar índices sazonais (Sm) na previsão atualizada
+            const baseForecasts = [resConf.baseKpi * 1.1, resConf.baseKpi * 0.95, resConf.baseKpi * 0.85];
+            const updatedForecast = baseForecasts.map((v, i) => {
+                const smFactor = resConf.sm[9 + i] || 1.0;
+                return Math.round(v * smFactor * reductionFactor);
+            });
+
+            if (energyChartInstance) {
+                for (let i = 0; i < 3; i++) {
+                    energyChartInstance.data.datasets[1].data[9 + i] = updatedForecast[i];
+                }
+                energyChartInstance.data.datasets[0].label = `Consumo Histórico (${resConf.unit})`;
+                energyChartInstance.data.datasets[1].label = `Previsão ML (${resConf.unit})`;
+                energyChartInstance.update();
+            }
+
+            // Atualização de KPIs com base nas tarifas
+            const kpiConsumo = Math.round(resConf.baseKpi * reductionFactor);
+            const kpiConsumoEl = document.getElementById('kpi-consumo');
+            if (kpiConsumoEl) kpiConsumoEl.innerText = `${kpiConsumo.toLocaleString('pt-PT')} ${resConf.unit}`;
+
+            const costPerUnit = appState.costs[activeRes];
+            const baseSaving = (resConf.baseKpi - kpiConsumo) * costPerUnit;
+            const totalSavingsEuro = (3420 + baseSaving).toFixed(2);
+
+            const kpiPoupancaEl = document.getElementById('kpi-poupanca');
+            if (kpiPoupancaEl) kpiPoupancaEl.innerText = `€ ${parseFloat(totalSavingsEuro).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`;
+
+            const emissFactor = appState.emissions[activeRes];
+            const co2Evited = ((resConf.baseKpi - kpiConsumo) * emissFactor).toFixed(1);
+
+            const kpiAmbientEl = document.getElementById('kpi-ambient-impact');
+            if (kpiAmbientEl) kpiAmbientEl.innerHTML = `<i class="fa-solid fa-leaf mr-0.5"></i> ${co2Evited} kg CO₂ evitados`;
+
+            // Atualização dinâmica da Participação Ativa baseada na tabela de estudantes
+            const totalParticipants = appState.studentLeaderboard.length;
+            const kpiParticEl = document.getElementById('kpi-participation');
+            if (kpiParticEl) kpiParticEl.innerText = `${totalParticipants} Alunos`;
+
+            // Atualização de Syllabus Integrados no Dashboard
+            updateSyllabusCountUI();
+        }
+
+        // --- CARREGAMENTO DE DADOS PERSONALIZADOS (CSV/Sheets) ---
+        function loadFromCsvUrl() {
+            const inputUrl = document.getElementById('sheets-csv-url');
+            const url = inputUrl ? inputUrl.value.trim() : '';
+            if (!url) {
+                showToast("Erro", "Por favor insira um link de CSV válido!", true);
+                return;
+            }
+            fetch(url)
+                .then(res => res.text())
+                .then(data => processCsvData(data))
+                .catch(err => showToast("Erro", "Falha ao descarregar ficheiro das Google Sheets. Garanta a partilha pública.", true));
+        }
+
+        function loadFromCsvFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                processCsvData(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function processCsvData(text) {
+            try {
+                const lines = text.split('\n');
+                let parsedRows = [];
+                for (let i = 0; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 4) {
+                        const ano = parseInt(cols[0].trim());
+                        const mes = parseInt(cols[1].trim());
+                        const recurso = cols[2].trim().toLowerCase();
+                        const consumo = parseFloat(cols[3].trim());
+
+                        if (!isNaN(ano) && ano >= 2023 && ano <= 2025 && !isNaN(consumo)) {
+                            parsedRows.push({ ano, mes, recurso, consumo });
+                        }
+                    }
+                }
+
+                if (parsedRows.length === 0) {
+                    showToast("Erro", "Nenhum dado válido encontrado para os anos 2023 a 2025.", true);
+                    return;
+                }
+
+                const resources = ['electricity', 'water', 'gas'];
+                resources.forEach(res => {
+                    const resRows = parsedRows.filter(r => r.recurso === res);
+                    if (resRows.length > 0) {
+                        resRows.sort((a, b) => (a.ano * 12 + a.mes) - (b.ano * 12 + b.mes));
+                        const historyPoints = resRows.map(r => r.consumo).slice(-9);
+                        if (historyPoints.length > 0) {
+                            appState.resourceParams[res].history = historyPoints;
+                            appState.resourceParams[res].baseKpi = Math.round(historyPoints[historyPoints.length - 1]);
+                        }
+                    }
+                });
+
+                saveConfig();
+                initChart();
+                updateForecast();
+                showToast("Ficheiro Carregado", "Os dados de consumo foram mapeados com sucesso.");
+            } catch (e) {
+                showToast("Erro", "Mapeamento inválido. Siga o formato estrutural do CSV.", true);
+            }
+        }
+
+        // --- GESTÃO DE LISTAS E ESCOLAS ---
+        function renderSchoolsDropdowns() {
+            const nlpSchool = document.getElementById('nlp-school');
+            const gamifySchool = document.getElementById('gamify-school');
+
+            if (nlpSchool) nlpSchool.innerHTML = '';
+            if (gamifySchool) gamifySchool.innerHTML = '';
+
+            appState.schools.filter(s => s.active).forEach(s => {
+                const opt = `<option value="${s.code}">${s.name} (${s.code})</option>`;
+                if (nlpSchool) nlpSchool.innerHTML += opt;
+                if (gamifySchool) gamifySchool.innerHTML += opt;
+            });
+        }
+
+        function addNewSchool() {
+            const codeInput = document.getElementById('new-school-code');
+            const nameInput = document.getElementById('new-school-name');
+            const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+            const name = nameInput ? nameInput.value.trim() : '';
+
+            if (code && name) {
+                appState.schools.push({ code, name, active: true, points: 0, savings: 0.0 });
+                if (codeInput) codeInput.value = '';
+                if (nameInput) nameInput.value = '';
+                saveConfig();
+                applyConfigToUI();
+                renderSchoolsDropdowns();
+                renderLeaderboard();
+                showToast("Escola Registada", "Nova entidade adicionada dinamicamente.");
+            }
+        }
+
+        function toggleSchool(index) {
+            appState.schools[index].active = !appState.schools[index].active;
+            saveConfig();
+            applyConfigToUI();
+            renderSchoolsDropdowns();
+            renderLeaderboard();
+        }
+
+        function removeSchool(index) {
+            appState.schools.splice(index, 1);
+            saveConfig();
+            applyConfigToUI();
+            renderSchoolsDropdowns();
+            renderLeaderboard();
+        }
+
+        // --- GESTÃO DE NUDGES ADMINISTRATIVA ---
+        function renderNudgesAdmin() {
+            const container = document.getElementById('admin-nudges-list');
+            if (container) {
+                container.innerHTML = '';
+                appState.nudges.forEach((nudge, index) => {
+                    container.innerHTML += `
+                        <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200">
+                            <span class="text-[11px] font-semibold text-slate-700 truncate pr-2 flex-grow">${nudge}</span>
+                            <button onclick="deleteNudgeAdmin(${index})" class="text-red-500 hover:text-red-700 text-xs shrink-0"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function addNewNudgeAdmin() {
+            const input = document.getElementById('new-nudge-input');
+            const val = input ? input.value.trim() : '';
+            if (val) {
+                appState.nudges.push(val);
+                if (input) input.value = '';
+                saveConfig();
+                renderNudgesAdmin();
+                showToast("Nudge Adicionado", "Conselho de poupança integrado no sistema.");
+            }
+        }
+
+        function deleteNudgeAdmin(index) {
+            appState.nudges.splice(index, 1);
+            saveConfig();
+            renderNudgesAdmin();
+            showToast("Nudge Removido", "Conselho removido.");
+        }
+
+        // --- SISTEMA GAMIFICAÇÃO & LEADERBOARD DINÂMICO ---
+        function renderGamificationList() {
+            const container = document.getElementById('gamify-actions-list');
+            if (container) {
+                container.innerHTML = '';
+                appState.actions.forEach(act => {
+                    container.innerHTML += `
+                        <button onclick="logAction('${act.id}', ${act.points})" class="w-full text-left p-3.5 hover:bg-emerald-50 rounded-2xl border border-slate-100 transition-all flex items-center justify-between text-xs font-bold">
+                            <span class="flex items-center"><i class="fa-solid ${act.icon} ${act.color} mr-2 text-sm"></i> ${act.label}</span>
+                            <span class="text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">+${act.points} pts</span>
+                        </button>
+                    `;
+                });
+            }
+        }
+
+        // Fluxo de Reporte e Contabilização anti-spam com atualização de pontos de Escola
+        function logAction(actId, pts) {
+            const studentNameInput = document.getElementById('gamify-student-name');
+            const studentIdInput = document.getElementById('gamify-student-id');
+            const gamifySchoolSelect = document.getElementById('gamify-school');
+
+            const studentName = studentNameInput ? studentNameInput.value.trim() : '';
+            const studentId = studentIdInput ? studentIdInput.value.trim() : '';
+            const activeSchoolCode = gamifySchoolSelect ? gamifySchoolSelect.value : '';
+
+            if (!studentName || !studentId) {
+                showToast("Campos em Falta", "Por favor, introduza o seu Nome e Número de Aluno para submeter!", true);
+                return;
+            }
+
+            // Implementação do Rate Limiting Anti-Spam
+            const limitKey = `${studentId}_${actId}`;
+            if (rateLimitRegistry[limitKey]) {
+                showToast("Limite Diário Atingido", `Já registaste a ação ecológica "${actId}" hoje. Tenta outra atividade consciente!`, true);
+                return;
+            }
+
+            // Mapear pontos para o Aluno
+            const existingStudent = appState.studentLeaderboard.find(st => st.id === studentId);
+            if (existingStudent) {
+                existingStudent.points += pts;
+            } else {
+                appState.studentLeaderboard.push({ name: studentName, id: studentId, points: pts });
+            }
+
+            // IMPORTANTE: Contabilizar e somar os pontos diretamente na Escola do Aluno
+            const targetSchool = appState.schools.find(s => s.code === activeSchoolCode);
+            if (targetSchool) {
+                targetSchool.points = (targetSchool.points || 0) + pts;
+                targetSchool.savings = parseFloat((targetSchool.savings + 0.1).toFixed(1));
+            }
+
+            // Guardar rate limiting na sessão atual
+            rateLimitRegistry[limitKey] = true;
+
+            // Exibir feedback com nudging banner
+            const nudgeBannerText = document.getElementById('nudge-text');
+            if (nudgeBannerText) {
+                nudgeBannerText.innerHTML = `<strong>Ação Registada!</strong> Parabéns <strong>${studentName}</strong>, acumulaste <strong>+${pts} pontos</strong> para a tua escola [${activeSchoolCode}].`;
+            }
+            const banner = document.getElementById('nudging-banner');
+            if (banner) banner.scrollIntoView({ behavior: 'smooth' });
+
+            saveConfig();
+            renderStudentLeaderboard();
+            renderLeaderboard();
+            updateForecast(); // Atualiza contador dinâmico de utilizadores
+            showToast("Ação Concluída", "Pontuação somada ao aluno e à respetiva escola!");
+        }
+
+        function renderStudentLeaderboard() {
+            const tbody = document.getElementById('student-leaderboard-body');
+            if (tbody) {
+                tbody.innerHTML = '';
+
+                const sorted = [...appState.studentLeaderboard].sort((a, b) => b.points - a.points).slice(0, 10);
+
+                sorted.forEach((st, idx) => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition-all">
+                            <td class="py-3 px-4 font-extrabold text-slate-500">${idx + 1}º</td>
+                            <td class="py-3 px-4 font-bold text-slate-900">${st.name}</td>
+                            <td class="py-3 px-4 text-slate-600">${st.id}</td>
+                            <td class="py-3 px-4 text-right font-black text-emerald-600">${st.points} pts</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // Leaderboard Escolas Reativo (Integrado com os pontos dinâmicos das escolas de appState)
+        function renderLeaderboard() {
+            const tbody = document.getElementById('leaderboard-body');
+            if (tbody) {
+                tbody.innerHTML = '';
+
+                const activeSchools = appState.schools.filter(s => s.active);
+                activeSchools.sort((a, b) => b.points - a.points);
+
+                activeSchools.forEach((sch, idx) => {
+                    let badge = `${idx + 1}º`;
+                    if (idx === 0) badge = "🥇";
+                    if (idx === 1) badge = "🥈";
+                    if (idx === 2) badge = "🥉"; // Medalha de Bronze de forma coerente!
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition-all">
+                            <td class="py-3 px-4 font-bold text-lg">${badge}</td>
+                            <td class="py-3 px-4 font-bold text-slate-900">${sch.name}</td>
+                            <td class="py-3 px-4 text-center"><span class="bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded">${sch.savings}%</span></td>
+                            <td class="py-3 px-4 text-right font-black text-slate-950">${sch.points}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // --- DETEÇÃO E FORMULÁRIO DE AVARIAS EM TEMPO REAL ---
+        function renderFaults() {
+            const container = document.getElementById('faults-container');
+            if (container) {
+                container.innerHTML = '';
+
+                // Recalcular contagens dinâmicas
+                let critCount = 0;
+                let warnCount = 0;
+
+                faultLogs.forEach(f => {
+                    if (f.type === "Crítico") critCount++;
+                    if (f.type === "Advertência") warnCount++;
+
+                    container.innerHTML += `
+                        <div class="p-4 border-l-4 ${f.color} rounded-r-2xl shadow-xs flex justify-between items-start">
+                            <div class="space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-black text-slate-900">${f.sys}</span>
+                                    <span class="px-2 py-0.5 text-[9px] font-bold rounded-full ${f.type === 'Crítico' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">${f.type}</span>
+                                </div>
+                                <p class="text-xs text-slate-600">${f.desc}</p>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-bold whitespace-nowrap pl-4">${f.time}</span>
+                        </div>
+                    `;
+                });
+
+                const critEl = document.getElementById('crit-count');
+                if (critEl) critEl.innerText = `${critCount} Alerta${critCount !== 1 ? 's' : ''}`;
+
+                const warnEl = document.getElementById('warn-count');
+                if (warnEl) warnEl.innerText = `${warnCount} Aviso${warnCount !== 1 ? 's' : ''}`;
+            }
+        }
+
+        // Submissão Manual de Incidentes/Avarias
+        function submitNewFault(event) {
+            event.preventDefault();
+            const locationInput = document.getElementById('fault-location');
+            const typeSelect = document.getElementById('fault-type');
+            const urgencySelect = document.getElementById('fault-urgency');
+            const descTextarea = document.getElementById('fault-desc');
+
+            const location = locationInput ? locationInput.value.trim() : '';
+            const type = typeSelect ? typeSelect.value : '';
+            const urgency = urgencySelect ? urgencySelect.value : 'Advertência';
+            const desc = descTextarea ? descTextarea.value.trim() : '';
+
+            const isCritical = urgency === "Crítico";
+            const colorClass = isCritical ? "border-red-500 bg-red-50/20" : "border-amber-500 bg-amber-50/20";
+
+            const newFault = {
+                sys: `${type} - ${location}`,
+                type: urgency,
+                desc: desc,
+                time: "Agora mesmo",
+                color: colorClass
+            };
+
+            // Inserir no topo da lista
+            faultLogs.unshift(newFault);
+            renderFaults();
+
+            // Resetar formulário
+            const form = document.getElementById('report-fault-form');
+            if (form) form.reset();
+            showToast("Reporte Enviado", "A equipa de manutenção e infraestruturas foi notificada.");
+        }
+
+        // --- GESTÃO DE BOLEIAS SUSTENTÁVEIS ---
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function getCarpools() {
+            if (!Array.isArray(appState.carpools)) appState.carpools = [];
+            return appState.carpools;
+        }
+
+        function renderCarpoolSchoolOptions() {
+            const schoolSelect = document.getElementById('carpool-school');
+            if (!schoolSelect) return;
+            schoolSelect.innerHTML = appState.schools.filter(s => s.active).map(s =>
+                `<option value="${escapeHtml(s.code)}">[${escapeHtml(s.code)}] ${escapeHtml(s.name)}</option>`
+            ).join('');
+        }
+
+        function formatCarpoolDate(dateValue) {
+            if (!dateValue) return 'Data não indicada';
+            return new Date(`${dateValue}T00:00:00`).toLocaleDateString('pt-PT', {
+                weekday: 'short', day: '2-digit', month: '2-digit'
+            });
+        }
+
+        function renderCarpools() {
+            const list = document.getElementById('carpool-list');
+            if (!list) return;
+            const carpools = getCarpools();
+            const origin = (document.getElementById('carpool-filter-origin')?.value || '').trim().toLowerCase();
+            const destination = (document.getElementById('carpool-filter-destination')?.value || '').trim().toLowerCase();
+            const date = document.getElementById('carpool-filter-date')?.value || '';
+            const available = carpools.filter(carpool => {
+                const matchesOrigin = !origin || carpool.origin.toLowerCase().includes(origin);
+                const matchesDestination = !destination || carpool.destination.toLowerCase().includes(destination);
+                const matchesDate = !date || carpool.date === date;
+                return matchesOrigin && matchesDestination && matchesDate && carpool.status !== 'cancelada';
+            });
+
+            list.innerHTML = available.map(carpool => {
+                const freeSeats = Math.max(0, carpool.seats - (carpool.passengers || []).filter(p => p.role === 'passageiro').length);
+                const isFull = freeSeats === 0;
+                const participantCount = (carpool.passengers || []).length;
+                return `<article class="p-4 rounded-2xl border ${isFull ? 'border-slate-200 bg-slate-50' : 'border-emerald-100 bg-emerald-50/30'} space-y-3">
+                    <div class="flex justify-between items-start gap-3">
+                        <div>
+                            <h4 class="font-extrabold text-slate-900">${escapeHtml(carpool.origin)} <i class="fa-solid fa-arrow-right text-emerald-500 mx-1"></i> ${escapeHtml(carpool.destination)}</h4>
+                            <p class="text-[11px] text-slate-500 mt-1"><i class="fa-regular fa-calendar mr-1"></i>${formatCarpoolDate(carpool.date)} às ${escapeHtml(carpool.time)} · ${escapeHtml(carpool.school)}</p>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${isFull ? 'bg-slate-200 text-slate-500' : 'bg-emerald-100 text-emerald-700'}">${isFull ? 'Lotada' : `${freeSeats} lugar${freeSeats !== 1 ? 'es' : ''}`}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                        <span><i class="fa-solid fa-user mr-1 text-slate-400"></i>${escapeHtml(carpool.driverName)}</span>
+                        <span><i class="fa-solid fa-road mr-1 text-slate-400"></i>${carpool.distanceKm} km</span>
+                        <span class="text-teal-600 font-bold"><i class="fa-solid fa-leaf mr-1"></i>Até ${Number(carpool.co2PerPassenger).toFixed(1)} kg CO₂/passageiro</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button ${isFull ? 'disabled' : ''} onclick="joinCarpool(${carpool.id}, 'passageiro')" class="flex-1 min-w-[130px] py-2 rounded-xl text-[11px] font-bold ${isFull ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}"><i class="fa-solid fa-ticket mr-1"></i> Reservar lugar</button>
+                        <button onclick="joinCarpool(${carpool.id}, 'interesse')" class="flex-1 min-w-[130px] py-2 rounded-xl text-[11px] font-bold bg-white hover:bg-amber-50 text-amber-700 border border-amber-200"><i class="fa-regular fa-star mr-1"></i> Demonstrar interesse</button>
+                    </div>
+                    ${participantCount ? `<p class="text-[10px] text-slate-400"><i class="fa-solid fa-users mr-1"></i>${participantCount} participante${participantCount !== 1 ? 's' : ''} registado${participantCount !== 1 ? 's' : ''}</p>` : ''}
+                </article>`;
+            }).join('');
+
+            document.getElementById('carpool-empty')?.classList.toggle('hidden', available.length > 0);
+            updateCarpoolKpis();
+        }
+
+        function updateCarpoolKpis() {
+            const carpools = getCarpools();
+            const active = carpools.filter(carpool => carpool.status !== 'cancelada');
+            const passengers = active.flatMap(carpool => (carpool.passengers || []).filter(p => p.role === 'passageiro'));
+            const co2Saved = passengers.reduce((total, passenger) => total + Number(passenger.co2Saved || 0), 0);
+            document.getElementById('carpool-kpi-available').textContent = active.filter(carpool => {
+                const used = (carpool.passengers || []).filter(p => p.role === 'passageiro').length;
+                return carpool.seats > used;
+            }).length;
+            document.getElementById('carpool-kpi-seats').textContent = active.reduce((total, carpool) => total + Math.max(0, carpool.seats - (carpool.passengers || []).filter(p => p.role === 'passageiro').length), 0);
+            document.getElementById('carpool-kpi-co2').textContent = `${co2Saved.toFixed(1)} kg`;
+            document.getElementById('carpool-kpi-participants').textContent = active.reduce((total, carpool) => total + (carpool.passengers || []).length, 0);
+        }
+
+        function clearCarpoolFilters() {
+            ['carpool-filter-origin', 'carpool-filter-destination', 'carpool-filter-date'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+            });
+            renderCarpools();
+        }
+
+        function awardCarpoolPoints(studentName, studentId, schoolCode, points) {
+            const student = appState.studentLeaderboard.find(item => item.id === studentId);
+            if (student) student.points += points;
+            else appState.studentLeaderboard.push({ name: studentName, id: studentId, points });
+            const school = appState.schools.find(item => item.code === schoolCode);
+            if (school) {
+                school.points = (school.points || 0) + points;
+                school.savings = parseFloat(((school.savings || 0) + 0.1).toFixed(1));
+            }
+        }
+
+        function publishCarpool(event) {
+            event.preventDefault();
+            const distanceKm = Number(document.getElementById('carpool-distance').value);
+            const newCarpool = {
+                id: Date.now(),
+                driverName: document.getElementById('carpool-driver-name').value.trim(),
+                driverId: document.getElementById('carpool-driver-id').value.trim(),
+                school: document.getElementById('carpool-school').value,
+                origin: document.getElementById('carpool-origin').value.trim(),
+                destination: document.getElementById('carpool-destination').value.trim(),
+                date: document.getElementById('carpool-date').value,
+                time: document.getElementById('carpool-time').value,
+                seats: Number(document.getElementById('carpool-seats').value),
+                passengers: [],
+                status: 'disponível',
+                distanceKm,
+                co2PerPassenger: distanceKm * 0.12
+            };
+            getCarpools().unshift(newCarpool);
+            awardCarpoolPoints(newCarpool.driverName, newCarpool.driverId, newCarpool.school, 20);
+            saveConfig();
+            document.querySelector('#tab-carpooling form').reset();
+            renderCarpoolSchoolOptions();
+            renderCarpools();
+            renderLeaderboard();
+            renderStudentLeaderboard();
+            showToast('Boleia Publicada', 'Viagem criada e atribuídos +20 pontos sustentáveis.');
+        }
+
+        function joinCarpool(carpoolId, role) {
+            const carpool = getCarpools().find(item => item.id === carpoolId);
+            if (!carpool) return;
+            const name = prompt(role === 'passageiro' ? 'Nome do passageiro:' : 'Nome para demonstrar interesse:');
+            if (!name || !name.trim()) return;
+            const studentId = prompt('Número de estudante:');
+            if (!studentId || !studentId.trim()) return;
+            const cleanId = studentId.trim();
+            if ((carpool.passengers || []).some(person => person.id === cleanId)) {
+                showToast('Registo Existente', 'Este estudante já está associado a esta boleia.', true);
+                return;
+            }
+            const passengerCount = (carpool.passengers || []).filter(person => person.role === 'passageiro').length;
+            if (role === 'passageiro' && passengerCount >= carpool.seats) {
+                showToast('Boleia Lotada', 'Já não existem lugares disponíveis nesta viagem.', true);
+                return;
+            }
+            const co2Saved = role === 'passageiro' ? Number(carpool.co2PerPassenger) : 0;
+            carpool.passengers = [...(carpool.passengers || []), { name: name.trim(), id: cleanId, role, co2Saved }];
+            if (role === 'passageiro') awardCarpoolPoints(name.trim(), cleanId, carpool.school, 10);
+            else awardCarpoolPoints(name.trim(), cleanId, carpool.school, 5);
+            saveConfig();
+            renderCarpools();
+            renderLeaderboard();
+            renderStudentLeaderboard();
+            showToast(role === 'passageiro' ? 'Lugar Reservado' : 'Interesse Registado', role === 'passageiro' ? 'Viagem sustentável registada. +10 pontos.' : 'O condutor foi informado do teu interesse. +5 pontos.');
+        }
+
+        // --- SDG CURRICULUM ANALYSER ---
+        const thesaurus = {
+            'ODS 6 - Água Potável': ['água', 'saneamento', 'recursos hídricos', 'eficiência hídrica'],
+            'ODS 7 - Energia Limpa': ['energia', 'eletricidade', 'solar', 'renovável', 'eficiência energética'],
+            'ODS 11 - Cidades e Comunidades': ['campus', 'sustentável', 'mobilidade', 'infraestrutura'],
+            'ODS 12 - Consumo Responsável': ['consumo', 'resíduos', 'reciclagem', 'economia circular'],
+            'ODS 13 - Ação Climática': ['carbono', 'clima', 'co2', 'emissões']
+        };
+
+        function analyzeCurriculum() {
+            const textInput = document.getElementById('syllabus-text');
+            const text = textInput ? textInput.value.toLowerCase() : '';
+
+            const targetSchoolSelect = document.getElementById('nlp-school');
+            const targetSchool = targetSchoolSelect ? targetSchoolSelect.value : '';
+
+            if (!text.trim()) {
+                showToast("Campo Vazio", "Por favor, introduza o texto do syllabus!", true);
+                return;
+            }
+
+            let matches = {};
+            let totalScore = 0;
+
+            for (const [ods, kws] of Object.entries(thesaurus)) {
+                let count = 0;
+                kws.forEach(kw => {
+                    const matchesKw = text.match(new RegExp(`\\b${kw}`, 'gi'));
+                    if (matchesKw) count += matchesKw.length;
+                });
+                if (count > 0) {
+                    matches[ods] = count;
+                    totalScore += count * 15;
+                }
+            }
+
+            const placeholder = document.getElementById('nlp-results-placeholder');
+            if (placeholder) placeholder.classList.add('hidden');
+
+            const resContent = document.getElementById('nlp-results-content');
+            if (resContent) resContent.classList.remove('hidden');
+
+            const scoreBadge = document.getElementById('score-val');
+            const scoreNum = Math.min(100, 20 + totalScore);
+            if (scoreBadge) scoreBadge.innerText = `${scoreNum}/100`;
+
+            const badgeContainer = document.getElementById('ods-badge-container');
+            if (badgeContainer) {
+                badgeContainer.innerHTML = '';
+
+                for (const [ods, freq] of Object.entries(matches)) {
+                    badgeContainer.innerHTML += `
+                        <div class="p-3 bg-emerald-50 rounded-xl flex justify-between items-center border border-emerald-100">
+                            <span class="text-xs font-bold text-emerald-800">${ods}</span>
+                            <span class="text-[10px] font-bold bg-white text-emerald-700 px-2 py-0.5 rounded">${freq} referências</span>
+                        </div>
+                    `;
+                }
+            }
+
+            // Incrementar contador de Syllabus Integrados e sincronizar com o Dashboard
+            appState.syllabusCount = (appState.syllabusCount || 48) + 1;
+            saveConfig();
+            updateSyllabusCountUI();
+
+            showToast("Syllabus Analisado", `Submetido de forma privada para a escola [${targetSchool}]. Contabilizado no Dashboard (${appState.syllabusCount} Cadeiras).`);
+        }
+
+        function loadTemplateSyllabus() {
+            const textInput = document.getElementById('syllabus-text');
+            if (textInput) {
+                textInput.value =
+                    "Plano de Estudos de Sustentabilidade Aplicada:\n" +
+                    "Esta unidade aborda soluções para racionalizar a água em contextos urbanos e campus. " +
+                    "Pretende-se que os alunos compreendam o impacto da energia solar fotovoltaica para atingir " +
+                    "níveis eficientes de energia. Introdução à economia circular e combate às alterações climáticas.";
+            }
+            analyzeCurriculum();
+        }
+
+        function loadSyllabusFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const textInput = document.getElementById('syllabus-text');
+                if (textInput) {
+                    textInput.value = e.target.result;
+                }
+                analyzeCurriculum();
+            };
+            reader.onerror = function () {
+                showToast("Erro", "Falha ao ler o ficheiro do plano curricular.", true);
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function updateSyllabusCountUI() {
+            const count = appState.syllabusCount ?? 48;
+            const kpiNlpCount = document.getElementById('kpi-nlp-count');
+            if (kpiNlpCount) {
+                kpiNlpCount.innerText = `${count} Cadeiras`;
+            }
+            const vaultCount = document.getElementById('vault-syllabus-count');
+            if (vaultCount) {
+                vaultCount.innerText = `${count} Cadeiras`;
+            }
+        }
+
+        // --- IMPORTAÇÃO / EXPORTAÇÃO DE CONFIGURAÇÃO (REPLICABILIDADE) ---
+        function applyAdminChanges() {
+            const nameIn = document.getElementById('config-inst-name');
+            if (nameIn) appState.instName = nameIn.value;
+
+            const logoIn = document.getElementById('config-inst-logo');
+            if (logoIn) appState.instLogo = logoIn.value;
+
+            const elecCostIn = document.getElementById('cfg-cost-elec');
+            if (elecCostIn) appState.costs.electricity = parseFloat(elecCostIn.value);
+
+            const efGridIn = document.getElementById('cfg-ef-grid');
+            if (efGridIn) appState.emissions.electricity = parseFloat(efGridIn.value);
+
+            const waterCostIn = document.getElementById('cfg-cost-water');
+            if (waterCostIn) appState.costs.water = parseFloat(waterCostIn.value);
+
+            const gasCostIn = document.getElementById('cfg-cost-gas');
+            if (gasCostIn) appState.costs.gas = parseFloat(gasCostIn.value);
+
+            const syllabusCountIn = document.getElementById('cfg-syllabus-count');
+            if (syllabusCountIn && !isNaN(parseInt(syllabusCountIn.value))) {
+                appState.syllabusCount = parseInt(syllabusCountIn.value);
+            }
+
+            const nlpToggle = document.getElementById('mod-nlp-toggle');
+            if (nlpToggle) appState.modules.nlp = nlpToggle.checked;
+
+            const gamifyToggle = document.getElementById('mod-gamification-toggle');
+            if (gamifyToggle) appState.modules.gamification = gamifyToggle.checked;
+
+            const faultsToggle = document.getElementById('mod-faults-toggle');
+            if (faultsToggle) appState.modules.faults = faultsToggle.checked;
+
+            saveConfig();
+            applyConfigToUI();
+            updateForecast();
+        }
+
+        function saveConfig() {
+            localStorage.setItem('smartcampus_config', JSON.stringify(appState));
+        }
+
+        function exportConfiguration() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "smartcampus_config.json");
+            dlAnchorElem.click();
+        }
+
+        function importConfiguration() {
+            const area = document.getElementById('import-json-area');
+            const rawJson = area ? area.value : '';
+            if (!rawJson.trim()) {
+                showToast("Erro", "Por favor, cole a string JSON de configuração válida!", true);
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(rawJson);
+                if (parsed.instName && parsed.costs) {
+                    appState = parsed;
+                    saveConfig();
+                    applyConfigToUI();
+                    initChart();
+                    renderSchoolsDropdowns();
+                    renderGamificationList();
+                    renderLeaderboard();
+                    renderStudentLeaderboard();
+                    updateForecast();
+                    renderNudgesAdmin();
+                    showToast("Sucesso", "Configuração aplicada dinamicamente.");
+                } else {
+                    showToast("Erro", "Chave JSON fornecida é inválida ou incompatível.", true);
+                }
+            } catch (err) {
+                showToast("Erro", "Erro ao ler o ficheiro JSON. Valide a estrutura.", true);
+            }
+        }
+
+        // Nudging System Generator
+        function generateNewNudge() {
+            if (appState.nudges.length === 0) return;
+            const r = appState.nudges[Math.floor(Math.random() * appState.nudges.length)];
+            const nudgeTextEl = document.getElementById('nudge-text');
+            if (nudgeTextEl) nudgeTextEl.innerHTML = r;
+        }
+
+        // ==================== ECOBOT AI ENGINE LOCAL ====================
+        const chatbotDatabase = {
+            ecoescolas: {
+                pt: "O programa EcoEscolas incentiva as IES a aplicar auditorias de consumo, reduzir o desperdício, gerir os resíduos e integrar toda a comunidade de estudantes, docentes e investigadores na estratégia de campus sustentável.",
+                en: "The EcoSchools program encourages universities to perform consumption audits, reduce waste, manage recycling, and involve students and staff in the sustainability agenda."
+            },
+            smartcampus: {
+                pt: "A aplicação SmartCampus IES v2.0 é um repositório centralizado a custo zero. Ela utiliza Machine Learning leve do lado do cliente para prever consumos futuros com base em 3 anos de histórico e incentiva comportamentos ecológicos com gamificação.",
+                en: "SmartCampus IES v2.0 is a zero-cost centralized dashboard. It leverages client-side Machine Learning to forecast utility trends based on 3 years of data and drives environmental action through community gamification."
+            },
+            poupar: {
+                pt: "Para poupar no campus: 1) Apaga as luzes e projetores ao sair das salas de aula. 2) Utiliza preferencialmente as escadas. 3) Reporta torneiras a pingar no separador de 'Avarias' para ação rápida da equipa de manutenção.",
+                en: "To save on campus: 1) Turn off classroom lights and projectors. 2) Take the stairs instead of the elevator. 3) Report water leaks or dripping taps in the 'Faults' tab for maintenance teams to act fast."
+            },
+            autor: {
+                pt: "Esta plataforma foi desenhada pelo autor Manuel Barros, do Instituto Politécnico de Tomar (IPT), no contexto da Rede Campus Sustentável portuguesa, sob licença CC-BY-SA 4.0.",
+                en: "This platform was designed by author Manuel Barros from the Polytechnic Institute of Tomar (IPT), in the context of the Portuguese Sustainable Campus Network, under a CC-BY-SA 4.0 license."
+            },
+            ipt: {
+                pt: "O Instituto Politécnico de Tomar (IPT) adota metas ambiciosas para reduzir as emissões carbónicas, monitorizando os recursos (Eletricidade, Água, Gás) e envolvendo ativamente os estudantes nas escolas ESTT, ESGT e ESTA.",
+                en: "The Polytechnic Institute of Tomar (IPT) works towards ambitious carbon-neutral goals, tracking utility usage (Electricity, Water, Gas) and engaging students dynamically across its schools ESTT, ESGT, and ESTA."
+            }
+        };
+
+        function sendQuickQuestion(questionText) {
+            const input = document.getElementById('chat-user-input');
+            if (input) input.value = questionText;
+            sendChatMessage();
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-user-input');
+            const userMsg = input ? input.value.trim() : '';
+            if (!userMsg) return;
+
+            const container = document.getElementById('chat-messages-container');
+            if (!container) return;
+
+            // Renderizar Mensagem do Utilizador
+            container.innerHTML += `
+                <div class="flex items-start space-x-2 justify-end">
+                    <div class="bg-emerald-600 text-white p-3 rounded-2xl max-w-[80%]">
+                        <p class="font-bold mb-1">Tu:</p>
+                        <p>${userMsg}</p>
+                    </div>
+                </div>
+            `;
+            if (input) input.value = '';
+
+            // Scroll automático
+            container.scrollTop = container.scrollHeight;
+
+            // Motor de resposta NLP Simulado (Bilingue)
+            setTimeout(() => {
+                let reply = "";
+                const isEnglish = /how|english|help|what|save|water|app|author/i.test(userMsg);
+                const queryLower = userMsg.toLowerCase();
+
+                if (/eco|escola|school/i.test(queryLower)) {
+                    reply = isEnglish ? chatbotDatabase.ecoescolas.en : chatbotDatabase.ecoescolas.pt;
+                } else if (/smartcampus|plataforma|app|aplicação/i.test(queryLower)) {
+                    reply = isEnglish ? chatbotDatabase.smartcampus.en : chatbotDatabase.smartcampus.pt;
+                } else if (/poup|save|agua|water|luz|lights/i.test(queryLower)) {
+                    reply = isEnglish ? chatbotDatabase.poupar.en : chatbotDatabase.poupar.pt;
+                } else if (/autor|manuel|barros|contacto/i.test(queryLower)) {
+                    reply = isEnglish ? chatbotDatabase.autor.en : chatbotDatabase.autor.pt;
+                } else if (/ipt|tomar|abrantes|estt|esgt|esta/i.test(queryLower)) {
+                    reply = isEnglish ? chatbotDatabase.ipt.en : chatbotDatabase.ipt.pt;
+                } else {
+                    reply = isEnglish
+                        ? "I didn't quite capture that. Ask me about the 'EcoSchools' program, 'how to save' energy, the 'SmartCampus' app or information about the 'author' of this platform!"
+                        : "Não consegui compreender a tua questão. Podes perguntar-me sobre o programa 'EcoEscolas', sobre 'como poupar' energia e água, sobre o 'SmartCampus' ou sobre o 'autor' desta plataforma!";
+                }
+
+                container.innerHTML += `
+                    <div class="flex items-start space-x-2">
+                        <div class="bg-emerald-100 text-emerald-800 p-2 rounded-xl">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bg-white border border-slate-100 p-3 rounded-2xl max-w-[80%] text-slate-800 shadow-sm">
+                            <p class="font-bold mb-1">EcoBot AI:</p>
+                            <p>${reply}</p>
+                        </div>
+                    </div>
+                `;
+                container.scrollTop = container.scrollHeight;
+            }, 600);
+        }
+
+        function toggleChat() {
+            const chatWindow = document.getElementById('chat-popup-window');
+            const chatIcon = document.getElementById('chat-icon-indicator');
+            if (!chatWindow) return;
+
+            if (chatWindow.classList.contains('hidden')) {
+                chatWindow.classList.remove('hidden');
+                chatWindow.offsetHeight; // force reflow
+                chatWindow.classList.remove('translate-y-4', 'opacity-0', 'pointer-events-none');
+                if (chatIcon) {
+                    chatIcon.classList.remove('fa-robot');
+                    chatIcon.classList.add('fa-chevron-down');
+                }
+                setTimeout(() => {
+                    const input = document.getElementById('chat-user-input');
+                    if (input) input.focus();
+                }, 100);
+            } else {
+                chatWindow.classList.add('translate-y-4', 'opacity-0', 'pointer-events-none');
+                if (chatIcon) {
+                    chatIcon.classList.remove('fa-chevron-down');
+                    chatIcon.classList.add('fa-robot');
+                }
+                setTimeout(() => {
+                    if (chatWindow.classList.contains('opacity-0')) {
+                        chatWindow.classList.add('hidden');
+                    }
+                }, 300);
+            }
+        }
+    </script>
+</body>
+
+</html>
